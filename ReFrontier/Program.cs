@@ -21,7 +21,7 @@ namespace ReFrontier
             string input = args[1];
 
             // Check mode
-            if (mode != "txb" && mode != "bin")
+            if (mode != "txb" && mode != "bin" && mode != "pac")
             {
                 Console.WriteLine("ERROR: Unsupported mode specified.");
                 return;
@@ -38,8 +38,8 @@ namespace ReFrontier
                 MemoryStream ms_input = new MemoryStream(File.ReadAllBytes(input));
                 BinaryReader br_input = new BinaryReader(ms_input);
 
-                // Extract txb & bin
-                if (mode == "txb" || mode == "bin")
+                // Extract txb, bin, pac
+                if (mode == "txb" || mode == "bin" || mode == "pac")
                 {
                     int count = br_input.ReadInt32();
                     // REMLATER Check if file is encrypted
@@ -49,6 +49,9 @@ namespace ReFrontier
                     {
                         int offset = br_input.ReadInt32();
                         int size = br_input.ReadInt32();
+
+                        // Break if size is zero
+                        if (size == 0) { Console.WriteLine("Offset: 0x" + offset.ToString("X8") + ", Size: 0x" + size.ToString("X8") + " (SKIPPED)"); continue; }
 
                         // Print to console
                         Console.WriteLine("Offset: 0x" + offset.ToString("X8") + ", Size: 0x" + size.ToString("X8"));
