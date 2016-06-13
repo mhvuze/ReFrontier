@@ -8,6 +8,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dumps", "Dumps", "{69F51E80-1D1B-430D-805A-696836C587F2}"
 	ProjectSection(SolutionItems) = preProject
 		2016_06_04_ItemNames.txt = 2016_06_04_ItemNames.txt
+		..\..\..\Monster Hunter Frontier\2016_06_13_MonsterIDs.txt = ..\..\..\Monster Hunter Frontier\2016_06_13_MonsterIDs.txt
+		..\..\..\Monster Hunter Frontier\2016_06_13_MonsterNames.txt = ..\..\..\Monster Hunter Frontier\2016_06_13_MonsterNames.txt
 	EndProjectSection
 EndProject
 Global
