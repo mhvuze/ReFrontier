@@ -1,16 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2019
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReFrontier", "ReFrontier\ReFrontier.csproj", "{4FA20038-15B6-4F86-95F7-6E8EF3B8C94D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dumps", "Dumps", "{69F51E80-1D1B-430D-805A-696836C587F2}"
-	ProjectSection(SolutionItems) = preProject
-		2016_06_04_ItemNames.txt = 2016_06_04_ItemNames.txt
-		..\..\..\Monster Hunter Frontier\2016_06_13_MonsterIDs.txt = ..\..\..\Monster Hunter Frontier\2016_06_13_MonsterIDs.txt
-		..\..\..\Monster Hunter Frontier\2016_06_13_MonsterNames.txt = ..\..\..\Monster Hunter Frontier\2016_06_13_MonsterNames.txt
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,5 +18,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7A0E65E1-A70E-4AF8-BEF4-641E40A323BB}
 	EndGlobalSection
 EndGlobal
