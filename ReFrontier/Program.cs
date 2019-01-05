@@ -88,6 +88,12 @@ namespace ReFrontier
                 Console.WriteLine("MHA Header detected.");
                 Handlers.UnpackMHA(input, brInput);
             }
+            // MHF Text file
+            else if (fileMagic == 0x000B0000)
+            {
+                Console.WriteLine("MHF Text file detected.");
+                Handlers.PrintFTXT(input, brInput);
+            }
             // Try to unpack as simple container: i.e. txb, bin, pac, gab
             else
             {
@@ -110,7 +116,7 @@ namespace ReFrontier
 
                 // Second level
                 FileInfo fileInfo = new FileInfo(inputFile);
-                string[] patterns = { "*.bin", "*.jkr" };
+                string[] patterns = { "*.bin", "*.jkr", "*.ftxt" };
                 string directory = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(inputFile)}";
 
                 if (Directory.Exists(directory))

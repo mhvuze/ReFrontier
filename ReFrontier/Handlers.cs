@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 
 namespace ReFrontier
 {
@@ -29,9 +30,6 @@ namespace ReFrontier
                     continue;
                 }
 
-                // Print to console
-                Console.WriteLine($"Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")}");
-
                 // Read file to array
                 brInput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
                 byte[] entryData = brInput.ReadBytes(entrySize);
@@ -47,8 +45,13 @@ namespace ReFrontier
                     extension = "ogg";
                 else if (BitConverter.ToInt32(header, 0) == 0x1A524B4A)
                     extension = "jkr";
+                else if (BitConverter.ToInt32(header, 0) == 0x000B0000)
+                    extension = "ftxt";
                 else
                     extension = "bin";
+
+                // Print to console
+                Console.WriteLine($"Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")} ({extension})");
 
                 // Extract file
                 File.WriteAllBytes($"{outputDir}\\{(i + 1).ToString("D4")}_{entryOffset.ToString("X8")}.{extension}", entryData);
@@ -88,7 +91,7 @@ namespace ReFrontier
 
                 // Get name
                 brInput.BaseStream.Seek(pointerEntryNamesBlock + entryNamesLength, SeekOrigin.Begin);
-                string entryName = Helpers.ReadNullterminatedString(brInput);
+                string entryName = Helpers.ReadNullterminatedString(brInput, Encoding.UTF8);
                 entryNamesLength += (entryName.Length + 1);
 
                 // Extract file
@@ -116,6 +119,27 @@ namespace ReFrontier
             int unk_v5_value = brInput.ReadInt32();
 
             Console.WriteLine($"JPK Type: {jpkType}, Data Offset: 0x{unk_r12.ToString("X8")}, Size: 0x{jpkSize.ToString("X8")}");       
+        }
+
+        public static void PrintFTXT(string input, BinaryReader brInput)
+        {
+            FileInfo fileInfo = new FileInfo(input);
+            string outputPath = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}.txt";
+            if (File.Exists(outputPath)) File.Delete(outputPath);
+            StreamWriter txtOutput = new StreamWriter(outputPath, true, Encoding.GetEncoding("shift-jis"));
+
+            // Read header
+            brInput.BaseStream.Seek(10, SeekOrigin.Current);
+            int stringCount = brInput.ReadInt16();
+            int textBlockSize = brInput.ReadInt32();
+
+            for (int i = 0; i < stringCount; i++)
+            {
+                string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis"));
+                txtOutput.WriteLine(str.Replace("\n", "<NEWLINE>"));
+            }
+
+            txtOutput.Close();
         }
 
         // Create archive based on log

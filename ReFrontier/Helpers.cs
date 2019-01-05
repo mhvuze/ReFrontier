@@ -9,14 +9,14 @@ namespace ReFrontier
     class Helpers
     {
         // Read null-terminated string
-        public static string ReadNullterminatedString(BinaryReader brInput)
+        public static string ReadNullterminatedString(BinaryReader brInput, Encoding encoding)
         {
             var charByteList = new List<byte>();
             string str = "";
             if (brInput.BaseStream.Position == brInput.BaseStream.Length)
             {
                 byte[] charByteArray = charByteList.ToArray();
-                str = Encoding.UTF8.GetString(charByteArray);
+                str = encoding.GetString(charByteArray);
                 return str;
             }
             byte b = brInput.ReadByte();
@@ -26,7 +26,7 @@ namespace ReFrontier
                 b = brInput.ReadByte();
             }
             byte[] char_bytes = charByteList.ToArray();
-            str = Encoding.UTF8.GetString(char_bytes);
+            str = encoding.GetString(char_bytes);
             return str;
         }
 
