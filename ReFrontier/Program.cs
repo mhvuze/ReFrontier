@@ -59,11 +59,22 @@ namespace ReFrontier
             {
                 Console.WriteLine("ECD Header detected.");
                 byte[] buffer = File.ReadAllBytes(input);
-                Ecd.dececd(buffer);
+                Crypto.decEcd(buffer);
                 byte[] bufferStripped = new byte[buffer.Length - 0x10];
                 Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
                 File.WriteAllBytes(input, bufferStripped);
-                Helpers.Print("ECD decrypted. Processing output.", false);
+                Helpers.Print("File decrypted. Processing output.", false);
+            }
+            // EXF Header
+            else if (fileMagic == 0x1A667865)
+            {
+                Console.WriteLine("EXF Header detected.");
+                byte[] buffer = File.ReadAllBytes(input);
+                /*Crypto.decexf(buffer);
+                byte[] bufferStripped = new byte[buffer.Length - 0x10];
+                Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
+                File.WriteAllBytes("out.bin", bufferStripped);
+                Helpers.Print("File decrypted. Processing output.", false);*/
             }
             // JKR Header
             else if (fileMagic == 0x1A524B4A)
@@ -89,7 +100,7 @@ namespace ReFrontier
             else Console.WriteLine("==============================");
         }
 
-        // Process a directory
+        // Process file(s) on multiple levels
         static void ProcessMultipleLevels(string[] inputFiles)
         {
             // First level            
@@ -99,22 +110,30 @@ namespace ReFrontier
                 ProcessFile(inputFile);
 
                 // Second level
-                FileInfo fileInfo = new FileInfo(inputFile);
-                string[] patterns = { "*.bin", "*.jkr" };
-                var secondLvlInputFiles = Helpers.MyDirectory.GetFiles($"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(inputFile)}", patterns, SearchOption.TopDirectoryOnly);
-                foreach (string secondLvlInputFile in secondLvlInputFiles)
+                try
                 {
-                    ProcessFile(secondLvlInputFile);
-
-                    // Third level
-                    fileInfo = new FileInfo(secondLvlInputFile);
-                    try
+                    FileInfo fileInfo = new FileInfo(inputFile);
+                    string[] patterns = { "*.bin", "*.jkr" };
+                    var secondLvlInputFiles = Helpers.MyDirectory.GetFiles($"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(inputFile)}", patterns, SearchOption.TopDirectoryOnly);
+                    foreach (string secondLvlInputFile in secondLvlInputFiles)
                     {
+                        ProcessFile(secondLvlInputFile);
+
+                        // Third level
+                        fileInfo = new FileInfo(secondLvlInputFile);
                         var thirdLvlInputFiles = Helpers.MyDirectory.GetFiles($"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(secondLvlInputFile)}", patterns, SearchOption.TopDirectoryOnly);
-                        foreach (string thirdLvlInputFile in thirdLvlInputFiles) ProcessFile(thirdLvlInputFile);
+                        foreach (string thirdLvlInputFile in thirdLvlInputFiles)
+                        {
+                            ProcessFile(thirdLvlInputFile);
+
+                            // Fourth level
+                            fileInfo = new FileInfo(thirdLvlInputFile);
+                            var fourthLvlInputFiles = Helpers.MyDirectory.GetFiles($"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(thirdLvlInputFile)}", patterns, SearchOption.TopDirectoryOnly);
+                            foreach (string fourthLvlInputFile in fourthLvlInputFiles) ProcessFile(fourthLvlInputFile);
+                        }
                     }
-                    catch { }
                 }
+                catch { }
             }
         }
     }

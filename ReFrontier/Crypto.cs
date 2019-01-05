@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 // by enler
 namespace ReFrontier
 {
-    class Ecd
+    class Crypto
     {
         static UInt32 LoadUInt32BE(byte[] buffer, int offset)
         {
@@ -16,30 +12,41 @@ namespace ReFrontier
         }
 
         // from addr 0x10292DCC
-        static byte[] rndBuf = new byte[] {0x4A,0x4B,0x52,0x2E,0x00,0x00,0x00,0x01,0x00,0x01,0x0D,0xCD,0x00,0x00,0x00,0x01,
-            0x00,0x01,0x0D,0xCD,0x00,0x00,0x00,0x01,0x00,0x01,0x0D,0xCD,0x00,0x00,0x00,0x01,
-            0x00,0x19,0x66,0x0D,0x00,0x00,0x00,0x03,0x7D,0x2B,0x89,0xDD,0x00,0x00,0x00,0x01 };
+        static byte[] rndBufEcd = new byte[] { 0x4A, 0x4B, 0x52, 0x2E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D,
+            0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD,
+            0x00, 0x00, 0x00, 0x01, 0x00, 0x19, 0x66, 0x0D, 0x00, 0x00, 0x00, 0x03, 0x7D, 0x2B, 0x89, 0xDD, 0x00,
+            0x00, 0x00, 0x01 };
 
-        static UInt32 ecd_getrnd(int index, ref UInt32 rnd)
+        // from addr 0x1025F4E0
+        static byte[] rndBufExf = new byte[] { 0x4A, 0x4B, 0x52, 0x2E, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D,
+            0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x0D, 0xCD,
+            0x00, 0x00, 0x00, 0x01, 0x02, 0xE9, 0x0E, 0xDD, 0x00, 0x00, 0x00, 0x03 };
+
+        static UInt32 getRndEcd(int index, ref UInt32 rnd)
         {
-            rnd = rnd * LoadUInt32BE(rndBuf, 8 * index) + LoadUInt32BE(rndBuf, 8 * index + 4);
+            rnd = rnd * LoadUInt32BE(rndBufEcd, 8 * index) + LoadUInt32BE(rndBufEcd, 8 * index + 4);
             return rnd;
         }
 
-        public static void dececd(byte[] buffer)
+        static UInt32 getRndExf(int index, ref UInt32 rnd)
+        {
+            return 0;
+        }
+
+        public static void decEcd(byte[] buffer)
         {
             UInt32 fsize = BitConverter.ToUInt32(buffer, 8);
             UInt32 crc32 = BitConverter.ToUInt32(buffer, 12);
             int index = BitConverter.ToUInt16(buffer, 4);
             UInt32 rnd = (crc32 << 16) | (crc32 >> 16) | 1;
 
-            UInt32 xorpad = ecd_getrnd(index, ref rnd);
+            UInt32 xorpad = getRndEcd(index, ref rnd);
 
             byte r8 = (byte)xorpad;
 
             for (int i = 0; i < fsize; i++)
             {
-                xorpad = ecd_getrnd(index, ref rnd);
+                xorpad = getRndEcd(index, ref rnd);
 
                 byte data = buffer[0x10 + i];
                 UInt32 r11 = (UInt32)(data ^ r8);
@@ -56,6 +63,11 @@ namespace ReFrontier
                 r8 = (byte)((r12 & 0xF) | ((r11 & 0xF) << 4));
                 buffer[0x10 + i] = r8;
             }
+        }
+
+        public static void decExf(byte[] buffer)
+        {
+
         }
     }
 }
