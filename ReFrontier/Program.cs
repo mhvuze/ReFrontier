@@ -106,34 +106,42 @@ namespace ReFrontier
             // First level            
             foreach (string inputFile in inputFiles)
             {
-                // First level
                 ProcessFile(inputFile);
 
                 // Second level
-                try
+                FileInfo fileInfo = new FileInfo(inputFile);
+                string[] patterns = { "*.bin", "*.jkr" };
+                string directory = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(inputFile)}";
+
+                if (Directory.Exists(directory))
                 {
-                    FileInfo fileInfo = new FileInfo(inputFile);
-                    string[] patterns = { "*.bin", "*.jkr" };
-                    var secondLvlInputFiles = Helpers.MyDirectory.GetFiles($"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(inputFile)}", patterns, SearchOption.TopDirectoryOnly);
+                    var secondLvlInputFiles = Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly);
                     foreach (string secondLvlInputFile in secondLvlInputFiles)
                     {
                         ProcessFile(secondLvlInputFile);
 
                         // Third level
                         fileInfo = new FileInfo(secondLvlInputFile);
-                        var thirdLvlInputFiles = Helpers.MyDirectory.GetFiles($"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(secondLvlInputFile)}", patterns, SearchOption.TopDirectoryOnly);
-                        foreach (string thirdLvlInputFile in thirdLvlInputFiles)
+                        directory = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(secondLvlInputFile)}";
+                        if (Directory.Exists(directory))
                         {
-                            ProcessFile(thirdLvlInputFile);
+                            var thirdLvlInputFiles = Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly);
+                            foreach (string thirdLvlInputFile in thirdLvlInputFiles)
+                            {
+                                ProcessFile(thirdLvlInputFile);
 
-                            // Fourth level
-                            fileInfo = new FileInfo(thirdLvlInputFile);
-                            var fourthLvlInputFiles = Helpers.MyDirectory.GetFiles($"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(thirdLvlInputFile)}", patterns, SearchOption.TopDirectoryOnly);
-                            foreach (string fourthLvlInputFile in fourthLvlInputFiles) ProcessFile(fourthLvlInputFile);
+                                // Fourth level
+                                fileInfo = new FileInfo(thirdLvlInputFile);
+                                directory = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(thirdLvlInputFile)}";
+                                if (Directory.Exists(directory))
+                                {
+                                    var fourthLvlInputFiles = Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly);
+                                    foreach (string fourthLvlInputFile in fourthLvlInputFiles) ProcessFile(fourthLvlInputFile);
+                                }
+                            }
                         }
                     }
                 }
-                catch { }
             }
         }
     }
