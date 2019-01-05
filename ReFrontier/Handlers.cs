@@ -9,8 +9,7 @@ namespace ReFrontier
         public static void UnpackSimpleArchive(string input, BinaryReader brInput, int magicSize)
         {
             FileInfo fileInfo = new FileInfo(input);
-            string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
-            Directory.CreateDirectory(outputDir);
+            string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";            
             //string logName = outputDir + ".log";
             //StreamWriter log = new StreamWriter(logName);
 
@@ -54,6 +53,7 @@ namespace ReFrontier
                 Console.WriteLine($"Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")} ({extension})");
 
                 // Extract file
+                Directory.CreateDirectory(outputDir);
                 File.WriteAllBytes($"{outputDir}\\{(i + 1).ToString("D4")}_{entryOffset.ToString("X8")}.{extension}", entryData);
 
                 // Save info to log

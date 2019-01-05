@@ -33,13 +33,14 @@ namespace ReFrontier
         // Multi-filter GetFiles https://stackoverflow.com/a/3754470/5343630
         public static class MyDirectory
         {
-            public static IEnumerable<string> GetFiles(string path,
+            public static string[] GetFiles(string path,
                                 string[] searchPatterns,
                                 SearchOption searchOption = SearchOption.TopDirectoryOnly)
             {
                 return searchPatterns.AsParallel()
                        .SelectMany(searchPattern =>
-                              Directory.EnumerateFiles(path, searchPattern, searchOption));
+                              Directory.EnumerateFiles(path, searchPattern, searchOption))
+                              .ToArray();
             }
         }
 

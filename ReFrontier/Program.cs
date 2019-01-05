@@ -109,44 +109,19 @@ namespace ReFrontier
         // Process file(s) on multiple levels
         static void ProcessMultipleLevels(string[] inputFiles)
         {
-            // First level            
+            // CurrentLevel        
             foreach (string inputFile in inputFiles)
             {
                 ProcessFile(inputFile);
 
-                // Second level
                 FileInfo fileInfo = new FileInfo(inputFile);
                 string[] patterns = { "*.bin", "*.jkr", "*.ftxt" };
                 string directory = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(inputFile)}";
 
                 if (Directory.Exists(directory))
                 {
-                    var secondLvlInputFiles = Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly);
-                    foreach (string secondLvlInputFile in secondLvlInputFiles)
-                    {
-                        ProcessFile(secondLvlInputFile);
-
-                        // Third level
-                        fileInfo = new FileInfo(secondLvlInputFile);
-                        directory = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(secondLvlInputFile)}";
-                        if (Directory.Exists(directory))
-                        {
-                            var thirdLvlInputFiles = Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly);
-                            foreach (string thirdLvlInputFile in thirdLvlInputFiles)
-                            {
-                                ProcessFile(thirdLvlInputFile);
-
-                                // Fourth level
-                                fileInfo = new FileInfo(thirdLvlInputFile);
-                                directory = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(thirdLvlInputFile)}";
-                                if (Directory.Exists(directory))
-                                {
-                                    var fourthLvlInputFiles = Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly);
-                                    foreach (string fourthLvlInputFile in fourthLvlInputFiles) ProcessFile(fourthLvlInputFile);
-                                }
-                            }
-                        }
-                    }
+                    //Process All Successive Levels
+                    ProcessMultipleLevels(Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly));
                 }
             }
         }
