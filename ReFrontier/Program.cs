@@ -19,17 +19,13 @@ namespace ReFrontier
                 FileAttributes inputAttr = File.GetAttributes(input);
                 if (inputAttr.HasFlag(FileAttributes.Directory))
                 {
-                    string[] inputFiles = Directory.GetFiles(input, "*.*", SearchOption.AllDirectories);
-                    foreach (string inputFile in inputFiles) ProcessFile(inputFile);
+                    string[] inputFiles = Directory.GetFiles(input, "*.*", SearchOption.TopDirectoryOnly);
+                    ProcessMultipleLevels(inputFiles);
                 }
                 else
                 {
-                    ProcessFile(input);
-                    string[] inputFiles = Directory.GetFiles($"{new FileInfo(input).Directory.FullName}\\{Path.GetFileNameWithoutExtension(input)}", "*.*", SearchOption.AllDirectories);
-                    foreach (string inputFile in inputFiles)
-                    {
-                        if (Path.GetExtension(inputFile) != ".png" && Path.GetExtension(inputFile) != ".ogg") ProcessFile(inputFile);
-                    }
+                    string[] inputFiles = { input };
+                    ProcessMultipleLevels(inputFiles);
                 }
                 Console.WriteLine("Done.");
             }
@@ -81,17 +77,45 @@ namespace ReFrontier
                 Console.WriteLine("MHA Header detected.");
                 Handlers.UnpackMHA(input, brInput);
             }
-            // Try to unpack as simple archive: i.e. txb, some bin, some pac, gab
+            // Try to unpack as simple container: i.e. txb, bin, pac, gab
             else
             {
-                Console.WriteLine("Trying to unpack as generic simple archive.");
+                Console.WriteLine("Trying to unpack as generic simple container.");
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                Handlers.UnpackSimpleArchive(input, brInput, 4);
+                try { Handlers.UnpackSimpleArchive(input, brInput, 4); } catch { }                
             }
 
-            Console.WriteLine("==============================");
+            if (fileMagic == 0x1A646365) { ProcessFile(input); return; }
+            else Console.WriteLine("==============================");
+        }
 
-            if (fileMagic == 0x1A646365) ProcessFile(input);
+        // Process a directory
+        static void ProcessMultipleLevels(string[] inputFiles)
+        {
+            // First level            
+            foreach (string inputFile in inputFiles)
+            {
+                // First level
+                ProcessFile(inputFile);
+
+                // Second level
+                FileInfo fileInfo = new FileInfo(inputFile);
+                string[] patterns = { "*.bin", "*.jkr" };
+                var secondLvlInputFiles = Helpers.MyDirectory.GetFiles($"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(inputFile)}", patterns, SearchOption.TopDirectoryOnly);
+                foreach (string secondLvlInputFile in secondLvlInputFiles)
+                {
+                    ProcessFile(secondLvlInputFile);
+
+                    // Third level
+                    fileInfo = new FileInfo(secondLvlInputFile);
+                    try
+                    {
+                        var thirdLvlInputFiles = Helpers.MyDirectory.GetFiles($"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(secondLvlInputFile)}", patterns, SearchOption.TopDirectoryOnly);
+                        foreach (string thirdLvlInputFile in thirdLvlInputFiles) ProcessFile(thirdLvlInputFile);
+                    }
+                    catch { }
+                }
+            }
         }
     }
 }

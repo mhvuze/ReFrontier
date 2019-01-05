@@ -104,7 +104,7 @@ namespace ReFrontier
         {
             FileInfo fileInfo = new FileInfo(input);
             string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
-            Directory.CreateDirectory(outputDir);
+            //Directory.CreateDirectory(outputDir);
 
             // Read header
             brInput.BaseStream.Seek(2, SeekOrigin.Current);
