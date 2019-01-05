@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ReFrontier
 {
@@ -102,6 +98,24 @@ namespace ReFrontier
 
                 Console.WriteLine($"{entryName}, 0x{entryUnk1.ToString("X8")}, Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")}, pSize: 0x{entryUnk2.ToString("X8")}, 0x{entryUnk3.ToString("X8")}");
             }
+        }
+
+        public static void UnpackJPK(string input, BinaryReader brInput)
+        {
+            FileInfo fileInfo = new FileInfo(input);
+            string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
+            Directory.CreateDirectory(outputDir);
+
+            // Read header
+            brInput.BaseStream.Seek(2, SeekOrigin.Current);
+            int jpkType = brInput.ReadInt16();
+            int unk_r12 = brInput.ReadInt32();
+            int jpkSize = brInput.ReadInt32();
+
+            brInput.BaseStream.Seek(unk_r12, SeekOrigin.Begin);
+            int unk_v5_value = brInput.ReadInt32();
+
+            Console.WriteLine($"JPK Type: {jpkType}, Data Offset: 0x{unk_r12.ToString("X8")}, Size: 0x{jpkSize.ToString("X8")}");       
         }
 
         // Create archive based on log

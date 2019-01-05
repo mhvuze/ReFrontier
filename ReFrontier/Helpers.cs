@@ -9,6 +9,7 @@ namespace ReFrontier
 {
     class Helpers
     {
+        // Read null-terminated string
         public static string ReadNullterminatedString(BinaryReader brInput)
         {
             var charByteList = new List<byte>();
@@ -28,6 +29,21 @@ namespace ReFrontier
             byte[] char_bytes = charByteList.ToArray();
             str = Encoding.UTF8.GetString(char_bytes);
             return str;
+        }
+
+        // Print to console with seperator
+        public static void Print(string input, bool printBefore)
+        {
+            if (!printBefore)
+            {
+                Console.WriteLine(input);
+                Console.WriteLine("==============================");
+            }
+            else
+            {
+                Console.WriteLine("\n==============================");
+                Console.WriteLine(input);
+            }
         }
     }
 }
