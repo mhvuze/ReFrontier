@@ -16,6 +16,18 @@ namespace ReFrontier
             int count = brInput.ReadInt32();
             //log.WriteLine(count);
 
+            // Calculate complete size of extracted data to avoid extracting plausible files that aren't archives
+            int completeSize = 4;
+            for (int i = 0; i < count; i++)
+            {
+                brInput.BaseStream.Seek(4, SeekOrigin.Current);
+                int entrySize = brInput.ReadInt32();
+                completeSize += entrySize;
+            }
+            brInput.BaseStream.Seek(4, SeekOrigin.Begin);
+            
+            if (completeSize > fileInfo.Length) { Console.WriteLine("Impossible container. Skipping."); return; }
+
             for (int i = 0; i < count; i++)
             {
                 int entryOffset = brInput.ReadInt32();
@@ -46,6 +58,8 @@ namespace ReFrontier
                     extension = "jkr";
                 else if (BitConverter.ToInt32(header, 0) == 0x000B0000)
                     extension = "ftxt";
+                else if (BitConverter.ToInt32(header, 0) == 542327876)
+                    extension = "dds";
                 else
                     extension = "bin";
 
