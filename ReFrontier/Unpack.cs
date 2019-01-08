@@ -23,9 +23,9 @@ namespace ReFrontier
             }
             brInput.BaseStream.Seek(4, SeekOrigin.Begin);
             
-            if (completeSize > fileInfo.Length) { Console.WriteLine("Impossible container. Skipping."); return; }
+            if (completeSize > fileInfo.Length || count == 0) { Console.WriteLine("Impossible container. Skipping."); return; }
 
-            // Write to log file if desired
+            // Write to log file if desired; needs some other solution because it creates useless logs even if !createLog
             Directory.CreateDirectory(outputDir);
             StreamWriter logOutput = new StreamWriter($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
             if (createLog) { logOutput.WriteLine("SimpleArchive"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('\\') + 1)); logOutput.WriteLine(count); }
@@ -47,13 +47,12 @@ namespace ReFrontier
                 brInput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
                 byte[] entryData = brInput.ReadBytes(entrySize);
 
-                // Check file header
+                // Check file header and get extension
                 byte[] header = new byte[4];
                 Array.Copy(entryData, header, 4);
                 int headerInt = BitConverter.ToInt32(header, 0);
-
                 string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
-                if (extension == null) extension = ".bin";
+                if (extension == null) extension = "bin";
 
                 // Print info
                 Console.WriteLine($"Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")} ({extension})");
@@ -65,7 +64,10 @@ namespace ReFrontier
                 // Move to next entry block
                 brInput.BaseStream.Seek(magicSize + (i + 1) * 0x08, SeekOrigin.Begin);
             }
+            // Clean up
             logOutput.Close();
+            if (!createLog) File.Delete($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            //if (Directory.GetFiles(outputDir) == null) Directory.Delete(outputDir);
         }
 
         public static void UnpackMHA(string input, BinaryReader brInput)

@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Force.Crc32;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace ReFrontier
 {
@@ -50,7 +50,15 @@ namespace ReFrontier
                         offset += fileData.Length;
                     }
                 }
+
+                // Print info for MHFUP_00.DAT
+                byte[] repackData = File.ReadAllBytes(fileName);
+                uint crc32 = Crc32Algorithm.Compute(repackData);
+                Console.WriteLine("==============================");
+                Console.WriteLine($"CRC32: {crc32.ToString("X8")}");
+                Console.WriteLine($"Filesize: {repackData.Length}");
             }
+            Console.WriteLine("==============================");
         }
     }
 }
