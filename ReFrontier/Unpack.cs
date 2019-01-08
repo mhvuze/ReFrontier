@@ -4,17 +4,14 @@ using System.Text;
 
 namespace ReFrontier
 {
-    class Handlers
+    class Unpack
     {
-        public static void UnpackSimpleArchive(string input, BinaryReader brInput, int magicSize)
+        public static void UnpackSimpleArchive(string input, BinaryReader brInput, int magicSize, bool createLog)
         {
             FileInfo fileInfo = new FileInfo(input);
-            string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";            
-            //string logName = outputDir + ".log";
-            //StreamWriter log = new StreamWriter(logName);
+            string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
 
             int count = brInput.ReadInt32();
-            //log.WriteLine(count);
 
             // Calculate complete size of extracted data to avoid extracting plausible files that aren't archives
             int completeSize = 4;
@@ -28,6 +25,11 @@ namespace ReFrontier
             
             if (completeSize > fileInfo.Length) { Console.WriteLine("Impossible container. Skipping."); return; }
 
+            // Write to log file if desired
+            Directory.CreateDirectory(outputDir);
+            StreamWriter logOutput = new StreamWriter($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            if (createLog) { logOutput.WriteLine("SimpleArchive"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('\\') + 1)); logOutput.WriteLine(count); }
+
             for (int i = 0; i < count; i++)
             {
                 int entryOffset = brInput.ReadInt32();
@@ -37,7 +39,7 @@ namespace ReFrontier
                 if (entrySize == 0)
                 {
                     Console.WriteLine($"Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")} (SKIPPED)");
-                    //log.WriteLine($"{(i + 1).ToString("D4")},none,{offset.ToString("X8")},{size.ToString("X8")}");
+                    if (createLog) logOutput.WriteLine($"null,{entryOffset},{entrySize},0");
                     continue;
                 }
 
@@ -46,37 +48,24 @@ namespace ReFrontier
                 byte[] entryData = brInput.ReadBytes(entrySize);
 
                 // Check file header
-                string extension = "";
                 byte[] header = new byte[4];
                 Array.Copy(entryData, header, 4);
+                int headerInt = BitConverter.ToInt32(header, 0);
 
-                if (BitConverter.ToInt32(header, 0) == 0x474e5089)
-                    extension = "png";
-                else if (BitConverter.ToInt32(header, 0) == 0x5367674F)
-                    extension = "ogg";
-                else if (BitConverter.ToInt32(header, 0) == 0x1A524B4A)
-                    extension = "jkr";
-                else if (BitConverter.ToInt32(header, 0) == 0x000B0000)
-                    extension = "ftxt";
-                else if (BitConverter.ToInt32(header, 0) == 542327876)
-                    extension = "dds";
-                else
-                    extension = "bin";
+                string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
+                if (extension == null) extension = ".bin";
 
-                // Print to console
+                // Print info
                 Console.WriteLine($"Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")} ({extension})");
+                if (createLog) logOutput.WriteLine($"{(i + 1).ToString("D4")}_{entryOffset.ToString("X8")}.{extension},{entryOffset},{entrySize},{headerInt}");
 
                 // Extract file
-                Directory.CreateDirectory(outputDir);
                 File.WriteAllBytes($"{outputDir}\\{(i + 1).ToString("D4")}_{entryOffset.ToString("X8")}.{extension}", entryData);
-
-                // Save info to log
-                //log.WriteLine($"{(i + 1).ToString("D4")},{extension},{offset.ToString("X8")},{size.ToString("X8")}");
 
                 // Move to next entry block
                 brInput.BaseStream.Seek(magicSize + (i + 1) * 0x08, SeekOrigin.Begin);
             }
-            //log.Close();
+            logOutput.Close();
         }
 
         public static void UnpackMHA(string input, BinaryReader brInput)

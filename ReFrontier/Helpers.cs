@@ -58,5 +58,15 @@ namespace ReFrontier
                 Console.WriteLine(input);
             }
         }
+
+        // Header <-> extensions
+        public enum Extensions
+        {
+            dds = 542327876,
+            ftxt = 0x000B0000,  // custom extension
+            jkr = 0x1A524B4A,
+            ogg = 0x5367674F,
+            png = 0x474e5089
+        }
     }
 }
