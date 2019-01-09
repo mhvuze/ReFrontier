@@ -52,11 +52,13 @@ namespace ReFrontier
                 }
 
                 // Print info for MHFUP_00.DAT
+                DateTime date = File.GetLastWriteTime(fileName);
+                string dateHex2 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16").Substring(0, 8);
+                string dateHex1 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16").Substring(8);
                 byte[] repackData = File.ReadAllBytes(fileName);
                 uint crc32 = Crc32Algorithm.Compute(repackData);
                 Console.WriteLine("==============================");
-                Console.WriteLine($"CRC32: {crc32.ToString("X8")}");
-                Console.WriteLine($"Filesize: {repackData.Length}");
+                Console.WriteLine($"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName},{repackData.Length},0");
             }
             Console.WriteLine("==============================");
         }
