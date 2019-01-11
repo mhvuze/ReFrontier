@@ -11,19 +11,19 @@ namespace ReFrontier
             FileInfo fileInfo = new FileInfo(input);
             string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
 
-            int count = brInput.ReadInt32();
+            uint count = brInput.ReadUInt32();
 
             // Calculate complete size of extracted data to avoid extracting plausible files that aren't archives
-            int completeSize = 4;
+            int completeSize = magicSize;
             for (int i = 0; i < count; i++)
             {
-                brInput.BaseStream.Seek(4, SeekOrigin.Current);
+                brInput.BaseStream.Seek(magicSize, SeekOrigin.Current);
                 int entrySize = brInput.ReadInt32();
                 completeSize += entrySize;
             }
-            brInput.BaseStream.Seek(4, SeekOrigin.Begin);
+            brInput.BaseStream.Seek(magicSize, SeekOrigin.Begin);
             
-            if (completeSize > fileInfo.Length || count == 0) { Console.WriteLine("Impossible container. Skipping."); return; }
+            if (completeSize > fileInfo.Length || count == 0 || count > 9999) { Console.WriteLine("Impossible container. Skipping."); return; }
 
             // Write to log file if desired; needs some other solution because it creates useless logs even if !createLog
             Directory.CreateDirectory(outputDir);

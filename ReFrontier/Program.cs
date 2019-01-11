@@ -6,37 +6,63 @@ namespace ReFrontier
 {
     class Program
     {
+        static bool createLog = false;
+        static bool repack = false;
+        static bool decryptOnly = false;
+        static bool encrypt = false;
+
         static void Main(string[] args)
         {
             Helpers.Print("ReFrontier by MHVuze", false);
 
             // Assign arguments
-            if (args.Length < 1) { Console.WriteLine("ERROR: Not enough arguments specified."); Console.Read(); return; }
-            string input = args[0]; bool createLog = false; bool repack = false;
-            if (args.Any("-log".Contains)) createLog = true; if (args.Any("-pack".Contains)) repack = true;
-            if (createLog) Console.WriteLine("Writing log file."); if (repack) Console.WriteLine("Repacking mode.");
+            if (args.Length < 1)
+            {
+                Helpers.Print("Usage: ReFrontier <file> (options)\n" +
+                    "Options:\n" +
+                    "-log: Write log file (required for repacking)\n" +
+                    "-pack: Repack directory (requires log file)\n" +
+                    "-decryptOnly: Decrypt ecd files without unpacking\n" +
+                    "-encrypt: Encrypt input file with ecd algorithm,", 
+                    false);
+                Console.Read();
+                return;
+            }
+
+            string input = args[0];
+            if (args.Any("-log".Contains)) createLog = true;
+            if (args.Any("-pack".Contains)) repack = true;
+            if (args.Any("-decryptOnly".Contains)) decryptOnly = true;
+            if (args.Any("-encrypt".Contains)) { encrypt = true; repack = false; }
 
             // Check file
             if (File.Exists(input) || Directory.Exists(input))
             {
                 FileAttributes inputAttr = File.GetAttributes(input);
+                // Directories
                 if (inputAttr.HasFlag(FileAttributes.Directory))
                 {
-                    if (!repack)
+                    if (!repack && !encrypt)
                     {
                         string[] inputFiles = Directory.GetFiles(input, "*.*", SearchOption.TopDirectoryOnly);
-                        ProcessMultipleLevels(inputFiles, createLog);
+                        ProcessMultipleLevels(inputFiles);
                     }
-                    else Pack.ProcessPackInput(input);
+                    else if (repack) Pack.ProcessPackInput(input);  
+                    else if (encrypt)
+                    {
+
+                    }
                 }
+                // Single file
                 else
                 {
-                    if (!repack)
+                    if (!repack && !encrypt)
                     {
                         string[] inputFiles = { input };
-                        ProcessMultipleLevels(inputFiles, createLog);
+                        ProcessMultipleLevels(inputFiles);
                     }
-                    else Console.WriteLine("A single file was specified while in repacking mode. Stopping.");
+                    else if (repack) Console.WriteLine("A single file was specified while in repacking mode. Stopping.");
+                    else if (encrypt) { byte[] buffer = File.ReadAllBytes(input); Crypto.encEcd(buffer); File.WriteAllBytes("out.bin", buffer); }
                 }
                 Console.WriteLine("Done.");
             }
@@ -45,7 +71,7 @@ namespace ReFrontier
         }
 
         // Process a file
-        static void ProcessFile(string input, bool createLog)
+        static void ProcessFile(string input)
         {
             Helpers.Print($"Processing {input}", false);
 
@@ -68,10 +94,15 @@ namespace ReFrontier
                 Console.WriteLine("ECD Header detected.");
                 byte[] buffer = File.ReadAllBytes(input);
                 Crypto.decEcd(buffer);
+
+                byte[] ecdHeader = new byte[0x10];
+                Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
                 byte[] bufferStripped = new byte[buffer.Length - 0x10];
                 Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
+
                 File.WriteAllBytes(input, bufferStripped);
-                Helpers.Print("File decrypted. Processing output.", false);
+                if (createLog) File.WriteAllBytes($"{input}.meta", ecdHeader);
+                Console.WriteLine("File decrypted.");
             }
             // EXF Header
             else if (fileMagic == 0x1A667865)
@@ -110,26 +141,26 @@ namespace ReFrontier
                 try { Unpack.UnpackSimpleArchive(input, brInput, 4, createLog); } catch { }                
             }
 
-            if (fileMagic == 0x1A646365) { ProcessFile(input, createLog); return; }
+            if (fileMagic == 0x1A646365 && !decryptOnly) { Console.WriteLine("=============================="); ProcessFile(input); return; }
             else Console.WriteLine("==============================");
         }
 
         // Process file(s) on multiple levels
-        static void ProcessMultipleLevels(string[] inputFiles, bool createLog)
+        static void ProcessMultipleLevels(string[] inputFiles)
         {
             // CurrentLevel        
             foreach (string inputFile in inputFiles)
             {
-                ProcessFile(inputFile, createLog);
+                ProcessFile(inputFile);
 
                 FileInfo fileInfo = new FileInfo(inputFile);
-                string[] patterns = { "*.bin", "*.jkr", "*.ftxt" };
+                string[] patterns = { "*.bin", "*.jkr", "*.ftxt", "*.snd" };
                 string directory = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(inputFile)}";
 
                 if (Directory.Exists(directory))
                 {
                     //Process All Successive Levels
-                    ProcessMultipleLevels(Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly), createLog);
+                    ProcessMultipleLevels(Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly));
                 }
             }
         }

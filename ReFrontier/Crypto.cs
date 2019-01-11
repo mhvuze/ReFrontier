@@ -65,6 +65,38 @@ namespace ReFrontier
             }
         }
 
+        public static void encEcd(byte[] buffer)
+        {
+            UInt32 fsize = (UInt32)buffer.Length;
+            UInt32 crc32 = 3764591486; // Calc
+            int index = 4; // Fetch
+            UInt32 rnd = (crc32 << 16) | (crc32 >> 16) | 1;
+
+            UInt32 xorpad = getRndEcd(index, ref rnd);
+
+            byte r8 = (byte)xorpad;
+
+            for (int i = 0; i < fsize; i++)
+            {
+                xorpad = getRndEcd(index, ref rnd);
+
+                byte data = buffer[i];
+                UInt32 r11 = (UInt32)(data ^ r8);
+                UInt32 r12 = (r11 >> 4) & 0xFF;
+                for (int j = 0; j < 8; j++)
+                {
+                    UInt32 r10 = xorpad ^ r11;
+                    r11 = r12;
+                    r12 = r12 ^ r10;
+                    r12 = r12 & 0xFF;
+                    xorpad = xorpad >> 4;
+                }
+
+                r8 = (byte)((r12 & 0xF) | ((r11 & 0xF) << 4));
+                buffer[i] = r8;
+            }
+        }
+
         public static void decExf(byte[] buffer)
         {
 
