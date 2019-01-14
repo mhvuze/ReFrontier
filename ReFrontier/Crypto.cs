@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Force.Crc32;
+using System;
 
 // by enler
 namespace ReFrontier
@@ -65,36 +66,58 @@ namespace ReFrontier
             }
         }
 
-        public static void encEcd(byte[] buffer)
+        public static byte[] encEcd(byte[] buffer, byte[] bufferMeta)
         {
-            UInt32 fsize = (UInt32)buffer.Length;
-            UInt32 crc32 = 3764591486; // Calc
-            int index = 4; // Fetch
-            UInt32 rnd = (crc32 << 16) | (crc32 >> 16) | 1;
+            // Update meta data
+            int fsize = buffer.Length;
+            UInt32 crc32w = Crc32Algorithm.Compute(buffer);
+            int index = BitConverter.ToUInt16(bufferMeta, 4);
 
+            // Write meta data
+            byte[] buf = new byte[16 + fsize];
+            byte[] bufnum;
+            Array.Copy(bufferMeta, buf, bufferMeta.Length);
+            bufnum = BitConverter.GetBytes(fsize);
+            Array.Copy(bufnum, 0, buf, 8, 4);
+            bufnum = BitConverter.GetBytes(crc32w);
+            Array.Copy(bufnum, 0, buf, 12, 4);
+
+            // Fill data with nullspace
+            int i;
+            for (i = 16 + fsize; i < buf.Length; i++) buf[i] = 0;
+
+            // Encrypt data
+            UInt32 rnd = (crc32w << 16) | (crc32w >> 16) | 1;
             UInt32 xorpad = getRndEcd(index, ref rnd);
-
             byte r8 = (byte)xorpad;
 
-            for (int i = 0; i < fsize; i++)
+            for (i = 0; i < fsize; i++)
             {
                 xorpad = getRndEcd(index, ref rnd);
-
                 byte data = buffer[i];
-                UInt32 r11 = (UInt32)(data ^ r8);
-                UInt32 r12 = (r11 >> 4) & 0xFF;
+                UInt32 r11 = 0;
+                UInt32 r12 = 0;
                 for (int j = 0; j < 8; j++)
                 {
                     UInt32 r10 = xorpad ^ r11;
                     r11 = r12;
-                    r12 = r12 ^ r10;
+                    r12 ^= r10;
                     r12 = r12 & 0xFF;
                     xorpad = xorpad >> 4;
                 }
 
-                r8 = (byte)((r12 & 0xF) | ((r11 & 0xF) << 4));
-                buffer[i] = r8;
+                UInt32 dig2 = data;
+                UInt32 dig1 = (dig2 >> 4) & 0xFF;
+                dig1 ^= r11;
+                dig2 ^= r12;
+                dig1 ^= dig2;
+
+                byte rr = (byte)((dig2 & 0xF) | ((dig1 & 0xF) << 4));
+                rr = (byte)(rr ^ r8);
+                buf[16 + i] = rr;
+                r8 = data;
             }
+            return buf;
         }
 
         public static void decExf(byte[] buffer)

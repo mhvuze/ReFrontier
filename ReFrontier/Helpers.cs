@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Force.Crc32;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -76,6 +77,18 @@ namespace ReFrontier
             foreach (byte b in ba)
                 hex.AppendFormat("{0:x2}", b);
             return hex.ToString();
+        }
+
+        // Print info for MHFUP_00.DAT
+        public static void PrintUpdateEntry(string fileName)
+        {
+            DateTime date = File.GetLastWriteTime(fileName);
+            string dateHex2 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16").Substring(0, 8);
+            string dateHex1 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16").Substring(8);
+            byte[] repackData = File.ReadAllBytes(fileName);
+            uint crc32 = Crc32Algorithm.Compute(repackData);
+            Console.WriteLine("==============================");
+            Console.WriteLine($"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName},{repackData.Length},0");
         }
 
         // Header <-> extensions

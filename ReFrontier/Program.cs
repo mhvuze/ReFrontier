@@ -10,6 +10,7 @@ namespace ReFrontier
         static bool repack = false;
         static bool decryptOnly = false;
         static bool encrypt = false;
+        static bool autoClose = false;
 
         static void Main(string[] args)
         {
@@ -23,7 +24,8 @@ namespace ReFrontier
                     "-log: Write log file (required for repacking)\n" +
                     "-pack: Repack directory (requires log file)\n" +
                     "-decryptOnly: Decrypt ecd files without unpacking\n" +
-                    "-encrypt: Encrypt input file with ecd algorithm,", 
+                    "-encrypt: Encrypt input file with ecd algorithm,\n" +
+                    "-close: Close window after finishing process", 
                     false);
                 Console.Read();
                 return;
@@ -34,6 +36,7 @@ namespace ReFrontier
             if (args.Any("-pack".Contains)) repack = true;
             if (args.Any("-decryptOnly".Contains)) decryptOnly = true;
             if (args.Any("-encrypt".Contains)) { encrypt = true; repack = false; }
+            if (args.Any("-close)".Contains)) autoClose = true;
 
             // Check file
             if (File.Exists(input) || Directory.Exists(input))
@@ -48,10 +51,7 @@ namespace ReFrontier
                         ProcessMultipleLevels(inputFiles);
                     }
                     else if (repack) Pack.ProcessPackInput(input);  
-                    else if (encrypt)
-                    {
-
-                    }
+                    else if (encrypt) Console.WriteLine("A directory was specified while in encryption mode. Stopping.");
                 }
                 // Single file
                 else
@@ -62,12 +62,20 @@ namespace ReFrontier
                         ProcessMultipleLevels(inputFiles);
                     }
                     else if (repack) Console.WriteLine("A single file was specified while in repacking mode. Stopping.");
-                    else if (encrypt) { byte[] buffer = File.ReadAllBytes(input); Crypto.encEcd(buffer); File.WriteAllBytes("out.bin", buffer); }
+                    else if (encrypt)
+                    {
+                        byte[] buffer = File.ReadAllBytes(input);
+                        byte[] bufferMeta = File.ReadAllBytes($"{input}.meta");
+                        buffer = Crypto.encEcd(buffer, bufferMeta);
+                        File.WriteAllBytes(input, buffer);
+                        Helpers.Print("File encrypted.", false);
+                        Helpers.PrintUpdateEntry(input);
+                    }
                 }
                 Console.WriteLine("Done.");
             }
             else Console.WriteLine("ERROR: Input file does not exist.");
-            Console.Read();
+           if (!autoClose) Console.Read();
         }
 
         // Process a file
