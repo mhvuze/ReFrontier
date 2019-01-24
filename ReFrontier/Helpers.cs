@@ -96,9 +96,12 @@ namespace ReFrontier
         {
             dds = 542327876,
             ftxt = 0x000B0000,  // custom extension
+            gfx2 = 846751303,   // WiiU texture
             jkr = 0x1A524B4A,
             ogg = 0x5367674F,
-            png = 0x474e5089
+            pmo = 7302512,      // iOS MHFU model
+            png = 0x474e5089,
+            tmh = 1213027374    // iOS MHFU texture
         }
     }
 }

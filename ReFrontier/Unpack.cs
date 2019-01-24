@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ReFrontier.jpk;
+using System;
 using System.IO;
 using System.Text;
 
@@ -108,22 +109,43 @@ namespace ReFrontier
             }
         }
 
-        public static void UnpackJPK(string input, BinaryReader brInput)
+        public static void UnpackJPK(string input)
         {
-            FileInfo fileInfo = new FileInfo(input);
-            string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
-            //Directory.CreateDirectory(outputDir);
-
-            // Read header
-            brInput.BaseStream.Seek(2, SeekOrigin.Current);
-            int jpkType = brInput.ReadInt16();
-            int unk_r12 = brInput.ReadInt32();
-            int jpkSize = brInput.ReadInt32();
-
-            brInput.BaseStream.Seek(unk_r12, SeekOrigin.Begin);
-            int unk_v5_value = brInput.ReadInt32();
-
-            Console.WriteLine($"JPK Type: {jpkType}, Data Offset: 0x{unk_r12.ToString("X8")}, Size: 0x{jpkSize.ToString("X8")}");       
+            byte[] buffer = File.ReadAllBytes(input);
+            MemoryStream ms = new MemoryStream(buffer);
+            BinaryReader br = new BinaryReader(ms);
+            if (br.ReadUInt32() == 0x1A524B4A)
+            {
+                IJPKDecode decoder = null;
+                ms.Seek(0x2, SeekOrigin.Current);
+                int type = br.ReadUInt16();
+                switch (type)
+                {
+                    case 0:
+                        decoder = new JPKDecodeRW();
+                        break;
+                    case 2:
+                        decoder = new JPKDecodeHFIRW();
+                        break;
+                    case 3:
+                        decoder = new JPKDecodeLz();
+                        break;
+                    case 4:
+                        decoder = new JPKDecodeHFI();
+                        break;
+                }
+                if (decoder != null)
+                {
+                    int startOffset = br.ReadInt32();
+                    int outSize = br.ReadInt32();
+                    byte[] outBuffer = new byte[outSize];
+                    ms.Seek(startOffset, SeekOrigin.Begin);
+                    decoder.ProcessOnDecode(ms, outBuffer);
+                    File.WriteAllBytes(input, outBuffer);
+                }
+            }
+            br.Close();
+            ms.Close();
         }
 
         public static void PrintFTXT(string input, BinaryReader brInput)

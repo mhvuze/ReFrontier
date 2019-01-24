@@ -127,7 +127,7 @@ namespace ReFrontier
             else if (fileMagic == 0x1A524B4A)
             {
                 Console.WriteLine("JKR Header detected.");
-                Unpack.UnpackJPK(input, brInput);
+                Unpack.UnpackJPK(input);
             }
             // MHA Header
             else if (fileMagic == 0x0161686D)
