@@ -15,7 +15,7 @@ namespace ReFrontier.jpk
             BinaryReader br = new BinaryReader(inStream);
             m_hfTableLen = br.ReadInt16();
             m_hfTableOffset = (int)inStream.Position;
-            m_hfDataOffset = m_hfTableOffset + m_hfTableLen * 2;
+            m_hfDataOffset = m_hfTableOffset + m_hfTableLen * 4 - 0x3fc;
             base.ProcessOnDecode(inStream, outBuffer);
         }
 

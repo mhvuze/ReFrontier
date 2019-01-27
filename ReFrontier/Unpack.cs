@@ -7,7 +7,7 @@ namespace ReFrontier
 {
     class Unpack
     {
-        public static void UnpackSimpleArchive(string input, BinaryReader brInput, int magicSize, bool createLog)
+        public static void UnpackSimpleArchive(string input, BinaryReader brInput, int magicSize, bool createLog, bool cleanUp)
         {
             FileInfo fileInfo = new FileInfo(input);
             string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
@@ -68,6 +68,7 @@ namespace ReFrontier
             // Clean up
             logOutput.Close();
             if (!createLog) File.Delete($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            if (cleanUp) File.Delete(input);
             //if (Directory.GetFiles(outputDir) == null) Directory.Delete(outputDir);
         }
 
@@ -136,12 +137,33 @@ namespace ReFrontier
                 }
                 if (decoder != null)
                 {
+                    // Decompres file
                     int startOffset = br.ReadInt32();
                     int outSize = br.ReadInt32();
                     byte[] outBuffer = new byte[outSize];
                     ms.Seek(startOffset, SeekOrigin.Begin);
                     decoder.ProcessOnDecode(ms, outBuffer);
-                    File.WriteAllBytes(input, outBuffer);
+
+                    // Get extension
+                    byte[] header = new byte[4];
+                    Array.Copy(outBuffer, header, 4);
+                    long headerInt = BitConverter.ToInt32(header, 0);
+                    string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
+                    if (extension == null) extension = "bin";
+
+                    // Special treatment for the model files
+                    if (headerInt == 1)
+                    {
+                        header = new byte[8];
+                        Array.Copy(outBuffer, header, 8);
+                        headerInt = BitConverter.ToInt64(header, 0);
+                        if (headerInt == 17179869185) extension = "fmod";
+                    }
+
+                    FileInfo fileInfo = new FileInfo(input);
+                    string output = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}.{extension}";
+                    File.Delete(input);
+                    File.WriteAllBytes(output, outBuffer);
                 }
             }
             br.Close();

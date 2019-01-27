@@ -11,6 +11,7 @@ namespace ReFrontier
         static bool decryptOnly = false;
         static bool encrypt = false;
         static bool autoClose = false;
+        static bool cleanUp = false;
 
         static void Main(string[] args)
         {
@@ -24,8 +25,9 @@ namespace ReFrontier
                     "-log: Write log file (required for repacking)\n" +
                     "-pack: Repack directory (requires log file)\n" +
                     "-decryptOnly: Decrypt ecd files without unpacking\n" +
-                    "-encrypt: Encrypt input file with ecd algorithm,\n" +
-                    "-close: Close window after finishing process", 
+                    "-encrypt: Encrypt input file with ecd algorithm\n" +
+                    "-close: Close window after finishing process\n" +
+                    "-cleanUp: Delete simple archives after unpacking", 
                     false);
                 Console.Read();
                 return;
@@ -37,6 +39,7 @@ namespace ReFrontier
             if (args.Any("-decryptOnly".Contains)) decryptOnly = true;
             if (args.Any("-encrypt".Contains)) { encrypt = true; repack = false; }
             if (args.Any("-close)".Contains)) autoClose = true;
+            if (args.Any("-cleanUp)".Contains)) cleanUp = true;
 
             // Check file
             if (File.Exists(input) || Directory.Exists(input))
@@ -47,7 +50,7 @@ namespace ReFrontier
                 {
                     if (!repack && !encrypt)
                     {
-                        string[] inputFiles = Directory.GetFiles(input, "*.*", SearchOption.TopDirectoryOnly);
+                        string[] inputFiles = Directory.GetFiles(input, "*.*", SearchOption.AllDirectories);
                         ProcessMultipleLevels(inputFiles);
                     }
                     else if (repack) Pack.ProcessPackInput(input);  
@@ -94,7 +97,7 @@ namespace ReFrontier
             if (fileMagic == 0x4F4D4F4D)
             {
                 Console.WriteLine("MOMO Header detected.");
-                Unpack.UnpackSimpleArchive(input, brInput, 8, createLog);
+                Unpack.UnpackSimpleArchive(input, brInput, 8, createLog, cleanUp);
             }
             // ECD Header
             else if (fileMagic == 0x1A646365)
@@ -128,6 +131,7 @@ namespace ReFrontier
             {
                 Console.WriteLine("JKR Header detected.");
                 Unpack.UnpackJPK(input);
+                Console.WriteLine("File decompressed.");
             }
             // MHA Header
             else if (fileMagic == 0x0161686D)
@@ -146,7 +150,7 @@ namespace ReFrontier
             {
                 Console.WriteLine("Trying to unpack as generic simple container.");
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                try { Unpack.UnpackSimpleArchive(input, brInput, 4, createLog); } catch { }                
+                try { Unpack.UnpackSimpleArchive(input, brInput, 4, createLog, cleanUp); } catch { }                
             }
 
             if (fileMagic == 0x1A646365 && !decryptOnly) { Console.WriteLine("=============================="); ProcessFile(input); return; }
