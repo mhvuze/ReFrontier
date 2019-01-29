@@ -14,6 +14,7 @@ namespace ReFrontier
         static bool cleanUp = false;
         static bool compress = false;
 
+        [STAThread]
         static void Main(string[] args)
         {
             Helpers.Print("ReFrontier by MHVuze", false);
@@ -69,7 +70,7 @@ namespace ReFrontier
                         ProcessMultipleLevels(inputFiles);
                     }
                     else if (repack) Console.WriteLine("A single file was specified while in repacking mode. Stopping.");
-                    else if (compress) { Pack.JPKEncode(0, input, input, 6); Helpers.Print("File compressed.", false); }
+                    else if (compress) { Pack.JPKEncode(0, input, $"output\\{Path.GetFileName(input)}", 6); Helpers.Print("File compressed.", false); }
                     else if (encrypt)
                     {
                         byte[] buffer = File.ReadAllBytes(input);

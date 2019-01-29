@@ -6,7 +6,7 @@ using System.IO;
 
 namespace ReFrontier
 {
-    class Pack
+    public class Pack
     {
         public static void ProcessPackInput(string input)
         {
@@ -64,6 +64,8 @@ namespace ReFrontier
 
         public static void JPKEncode(UInt16 atype, string inPath, string otPath, int level)
         {
+            Directory.CreateDirectory("output");
+
             UInt16 type = atype;
             byte[] buffer = File.ReadAllBytes(inPath);
             int insize = buffer.Length;
@@ -96,6 +98,7 @@ namespace ReFrontier
                     //encoder = new JPKEncodeHFI();
                     break;
             }
+
             if (encoder != null)
             {
                 DateTime sta, fin;

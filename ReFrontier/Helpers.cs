@@ -4,10 +4,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 
 namespace ReFrontier
 {
-    class Helpers
+    public class Helpers
     {
         // Read null-terminated string
         public static string ReadNullterminatedString(BinaryReader brInput, Encoding encoding)
@@ -87,8 +88,9 @@ namespace ReFrontier
             string dateHex1 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16").Substring(8);
             byte[] repackData = File.ReadAllBytes(fileName);
             uint crc32 = Crc32Algorithm.Compute(repackData);
-            Console.WriteLine("==============================");
+            //Console.WriteLine("==============================");
             Console.WriteLine($"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName},{repackData.Length},0");
+            Clipboard.SetText($"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName},{repackData.Length},0");
         }
 
         // Header <-> extensions

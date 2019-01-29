@@ -18,6 +18,7 @@ namespace ReFrontier.jpk
                 }
                 WriteByte(outStream, inBuffer[iin]);
             }
+            outStream.Close();
             if (progress != null) progress(100);
         }
         public void WriteByte(Stream s, byte b)

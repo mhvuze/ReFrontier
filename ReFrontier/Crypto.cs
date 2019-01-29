@@ -4,7 +4,7 @@ using System;
 // by enler
 namespace ReFrontier
 {
-    class Crypto
+    public class Crypto
     {
         static UInt32 LoadUInt32BE(byte[] buffer, int offset)
         {
