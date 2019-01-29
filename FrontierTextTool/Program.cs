@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace FrontierTextTool
 {
@@ -15,7 +14,7 @@ namespace FrontierTextTool
         static bool verbose = false;
         static bool autoClose = false;
 
-        [STAThread]
+        //[STAThread]
         static void Main(string[] args)
         {
             if (args.Length < 2) { Console.WriteLine("Too few arguments."); return; }
@@ -25,8 +24,7 @@ namespace FrontierTextTool
 
             if (args[0] == "dump") DumpAndHash(args[1], Convert.ToInt32(args[2]), Convert.ToInt32(args[3]));
             if (args[0] == "insert") InsertStrings(args[1], args[2]);
-            Console.WriteLine("Done");
-            if (!autoClose) Console.Read();
+            if (!autoClose) { Console.WriteLine("Done"); Console.Read(); }
         }
 
         public class StringDatabase
@@ -39,6 +37,7 @@ namespace FrontierTextTool
         // insert src\mhfpac.bin csv\mhfpac_01.csv
         static void InsertStrings(string inputFile, string inputCsv)
         {
+            Console.WriteLine($"Processing {inputFile}...");
             byte[] inputArray = File.ReadAllBytes(inputFile);
 
             // Read csv
@@ -65,45 +64,52 @@ namespace FrontierTextTool
                 }
             }
 
-            // Create byte array with translated strings
-            int eStringsLength = 0;
+            // Get info for translation array and get all offsets that need to be remapped            
+            int eStringsCount = 0;
+            List<UInt32> eStringsOffsets = new List<uint>();
+            List<Int32> eStringLengths = new List<int>();
             foreach (var obj in stringDatabase)
             {
-                if (obj.eString != "") eStringsLength += obj.eString.Length + 1;
+                if (obj.eString != "")
+                {
+                    eStringsCount += 1;
+                    eStringsOffsets.Add(obj.offset);
+                    eStringLengths.Add(GetNullterminatedStringLength(obj.eString));
+                }
             }
 
-            Console.WriteLine($"Filling array of size {eStringsLength.ToString("X8")}...");
+            int eStringsLength = eStringLengths.Sum();
+            if (verbose) Console.WriteLine($"Filling array of size {eStringsLength.ToString("X8")}...");
             byte[] eStringsArray = new byte[eStringsLength];
-            int pos = 0;
+            int procCount = 0;
             foreach (var obj in stringDatabase)
             {
                 if (obj.eString != "")
                 {
                     // Write string to string array
-                    if (verbose) Console.WriteLine($"String: '{obj.eString}', Length: {obj.eString.Length}");
+                    int test = eStringLengths.Take(procCount).Sum();
+                    if (verbose) Console.WriteLine($"String: '{obj.eString}', Length: {eStringLengths[procCount] - 1}");
+                    else Console.Write($"\rProcessing {(procCount + 1).ToString().PadLeft(10)} / {eStringsCount}...");
                     byte[] eStringArray = Encoding.GetEncoding("shift-jis").GetBytes(obj.eString);
-                    Array.Copy(eStringArray, 0, eStringsArray, pos, obj.eString.Length);
+                    Array.Copy(eStringArray, 0, eStringsArray, eStringLengths.Take(procCount).Sum(), eStringLengths[procCount] - 1);
 
                     // Replace offsets in binary file
                     byte[] pointerToReplace = BitConverter.GetBytes((Int32)obj.offset);
-                    byte[] newPointer = BitConverter.GetBytes((Int32)(inputArray.Length + pos));
+                    byte[] newPointer = BitConverter.GetBytes((Int32)(inputArray.Length + eStringLengths.Take(procCount).Sum()));
                     int pointerCount = 0;
                     for (int p = 0; p < inputArray.Length; p++)
                     {
                         if (!DetectPatch(inputArray, p, pointerToReplace)) continue;
 
                         // Skip if within first 10kb to preserve index just in case
-                        if (p > 1000)
+                        if (p > 10000)
                         {
                             if (verbose) Console.WriteLine($"Remapping pointer at 0x{p.ToString("X8")}");
                             pointerCount++;
-                            for (int w = 0; w < pointerToReplace.Length; w++)
-                            {
-                                inputArray[p + w] = newPointer[w];
-                            }
+                            for (int w = 0; w < pointerToReplace.Length; w++) inputArray[p + w] = newPointer[w];
                         }
                     }
-                    pos += obj.eString.Length + 1;
+                    procCount++;
                 }
             }
             
@@ -123,10 +129,12 @@ namespace FrontierTextTool
             byte[] bufferMeta = File.ReadAllBytes($"{outputFile}.meta");
             buffer = ReFrontier.Crypto.encEcd(buffer, bufferMeta);
             File.WriteAllBytes(outputFile, buffer);
+            Console.WriteLine();
             ReFrontier.Helpers.PrintUpdateEntry(outputFile);
         }
 
         // dump mhfpac.bin 4416 1289334
+        // dump mhfdat.bin 3040 3270334
         static void DumpAndHash(string input, int startOffset, int endOffset)
         {
             MemoryStream msInput = new MemoryStream(File.ReadAllBytes(input));
@@ -162,6 +170,12 @@ namespace FrontierTextTool
                 if (PatchFind[p] != sequence[position + p]) return false;
             }
             return true;
+        }
+
+        // Get byte length of string (avoids issues with special spacing characters)
+        public static int GetNullterminatedStringLength(string input)
+        {
+            return Encoding.GetEncoding("shift-jis").GetBytes(input).Length + 1;
         }
     }
 }

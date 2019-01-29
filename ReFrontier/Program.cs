@@ -14,7 +14,7 @@ namespace ReFrontier
         static bool cleanUp = false;
         static bool compress = false;
 
-        [STAThread]
+        //[STAThread]
         static void Main(string[] args)
         {
             Helpers.Print("ReFrontier by MHVuze", false);

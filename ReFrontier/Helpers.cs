@@ -90,7 +90,7 @@ namespace ReFrontier
             uint crc32 = Crc32Algorithm.Compute(repackData);
             //Console.WriteLine("==============================");
             Console.WriteLine($"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName},{repackData.Length},0");
-            Clipboard.SetText($"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName},{repackData.Length},0");
+            //Clipboard.SetText($"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName},{repackData.Length},0");
         }
 
         // Header <-> extensions
