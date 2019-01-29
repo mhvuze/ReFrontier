@@ -64,21 +64,21 @@ namespace FrontierTextTool
                 }
             }
 
-            // Get info for translation array and get all offsets that need to be remapped            
-            int eStringsCount = 0;
+            // Get info for translation array and get all offsets that need to be remapped
             List<UInt32> eStringsOffsets = new List<uint>();
             List<Int32> eStringLengths = new List<int>();
             foreach (var obj in stringDatabase)
             {
                 if (obj.eString != "")
                 {
-                    eStringsCount += 1;
                     eStringsOffsets.Add(obj.offset);
                     eStringLengths.Add(GetNullterminatedStringLength(obj.eString));
                 }
             }
 
             int eStringsLength = eStringLengths.Sum();
+            int eStringsCount = eStringLengths.Count;
+
             if (verbose) Console.WriteLine($"Filling array of size {eStringsLength.ToString("X8")}...");
             byte[] eStringsArray = new byte[eStringsLength];
             int procCount = 0;
@@ -99,7 +99,7 @@ namespace FrontierTextTool
                     int pointerCount = 0;
                     for (int p = 0; p < inputArray.Length; p++)
                     {
-                        if (!DetectPatch(inputArray, p, pointerToReplace)) continue;
+                        if (!IsPointer(inputArray, p, pointerToReplace)) continue;
 
                         // Skip if within first 10kb to preserve index just in case
                         if (p > 10000)
@@ -162,12 +162,12 @@ namespace FrontierTextTool
 
         // Find and replace binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool DetectPatch(byte[] sequence, int position, byte[] PatchFind)
+        public static bool IsPointer(byte[] sequence, int position, byte[] replacement)
         {
-            if (position + PatchFind.Length > sequence.Length) return false;
-            for (int p = 0; p < PatchFind.Length; p++)
+            if (position + replacement.Length > sequence.Length) return false;
+            for (int p = 0; p < replacement.Length; p++)
             {
-                if (PatchFind[p] != sequence[position + p]) return false;
+                if (replacement[p] != sequence[position + p]) return false;
             }
             return true;
         }
