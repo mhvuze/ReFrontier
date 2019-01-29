@@ -1,9 +1,11 @@
 ﻿using CsvHelper;
 using Force.Crc32;
+using Renci.SshNet;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -75,9 +77,12 @@ namespace FrontierTextTool
                     eStringLengths.Add(GetNullterminatedStringLength(obj.eString));
                 }
             }
-
             int eStringsLength = eStringLengths.Sum();
             int eStringsCount = eStringLengths.Count;
+
+            // Create dictionary with offset replacements
+            Dictionary<int, int> offsetDict = new Dictionary<int, int>();
+            for (int i = 0; i < eStringsCount; i++) offsetDict.Add((int)eStringsOffsets[i], inputArray.Length + eStringLengths.Take(i).Sum());
 
             if (verbose) Console.WriteLine($"Filling array of size {eStringsLength.ToString("X8")}...");
             byte[] eStringsArray = new byte[eStringsLength];
@@ -89,30 +94,25 @@ namespace FrontierTextTool
                     // Write string to string array
                     int test = eStringLengths.Take(procCount).Sum();
                     if (verbose) Console.WriteLine($"String: '{obj.eString}', Length: {eStringLengths[procCount] - 1}");
-                    else Console.Write($"\rProcessing {(procCount + 1).ToString().PadLeft(10)} / {eStringsCount}...");
                     byte[] eStringArray = Encoding.GetEncoding("shift-jis").GetBytes(obj.eString);
                     Array.Copy(eStringArray, 0, eStringsArray, eStringLengths.Take(procCount).Sum(), eStringLengths[procCount] - 1);
-
-                    // Replace offsets in binary file
-                    byte[] pointerToReplace = BitConverter.GetBytes((Int32)obj.offset);
-                    byte[] newPointer = BitConverter.GetBytes((Int32)(inputArray.Length + eStringLengths.Take(procCount).Sum()));
-                    int pointerCount = 0;
-                    for (int p = 0; p < inputArray.Length; p++)
-                    {
-                        if (!IsPointer(inputArray, p, pointerToReplace)) continue;
-
-                        // Skip if within first 10kb to preserve index just in case
-                        if (p > 10000)
-                        {
-                            if (verbose) Console.WriteLine($"Remapping pointer at 0x{p.ToString("X8")}");
-                            pointerCount++;
-                            for (int w = 0; w < pointerToReplace.Length; w++) inputArray[p + w] = newPointer[w];
-                        }
-                    }
                     procCount++;
                 }
             }
-            
+
+            // Replace offsets in binary file
+            for (int p = 0; p < inputArray.Length; p += 4)
+            {
+                if (p + 4 > inputArray.Length) continue;
+                int cur = BitConverter.ToInt32(inputArray, p);
+                if (offsetDict.ContainsKey(cur))
+                {
+                    int replacement = 0; offsetDict.TryGetValue(cur, out replacement);
+                    byte[] newPointer = BitConverter.GetBytes(replacement);
+                    for (int w = 0; w < 4; w++) inputArray[p + w] = newPointer[w];
+                }
+            }
+
             // Combine arrays
             byte[] outputArray = new byte[inputArray.Length + eStringsLength];
             Array.Copy(inputArray, outputArray, inputArray.Length);
@@ -129,8 +129,10 @@ namespace FrontierTextTool
             byte[] bufferMeta = File.ReadAllBytes($"{outputFile}.meta");
             buffer = ReFrontier.Crypto.encEcd(buffer, bufferMeta);
             File.WriteAllBytes(outputFile, buffer);
-            Console.WriteLine();
             ReFrontier.Helpers.PrintUpdateEntry(outputFile);
+
+            // Upload to ftp
+            FileUploadSFTP(buffer, $"/var/www/html/mhfo/dat/{Path.GetFileName(inputFile)}");
         }
 
         // dump mhfpac.bin 4416 1289334
@@ -160,22 +162,38 @@ namespace FrontierTextTool
             txtOutput.Close();
         }
 
-        // Find and replace binary
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsPointer(byte[] sequence, int position, byte[] replacement)
-        {
-            if (position + replacement.Length > sequence.Length) return false;
-            for (int p = 0; p < replacement.Length; p++)
-            {
-                if (replacement[p] != sequence[position + p]) return false;
-            }
-            return true;
-        }
-
         // Get byte length of string (avoids issues with special spacing characters)
         public static int GetNullterminatedStringLength(string input)
         {
             return Encoding.GetEncoding("shift-jis").GetBytes(input).Length + 1;
+        }
+
+        // Upload to ftp
+        public static void FileUploadSFTP(byte[] buffer, string path)
+        {
+            var host = "192.168.2.121";
+            var port = 22;
+            var username = "root";
+            var password = "coconut";
+
+            using (var client = new SftpClient(host, port, username, password))
+            {
+                client.Connect();
+                if (client.IsConnected)
+                {
+                    Console.WriteLine($"Connected. Uploading to {path}...");
+                    using (var ms = new MemoryStream(buffer))
+                    {
+                        client.BufferSize = (uint)ms.Length;
+                        client.UploadFile(ms, path);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Could not connect.");
+                    return;
+                }
+            }
         }
     }
 }
