@@ -120,6 +120,7 @@ namespace ReFrontier
                 IJPKDecode decoder = null;
                 ms.Seek(0x2, SeekOrigin.Current);
                 int type = br.ReadUInt16();
+                Console.WriteLine($"JPK Type: {type}");
                 switch (type)
                 {
                     case 0:

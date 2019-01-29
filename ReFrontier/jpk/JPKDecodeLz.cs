@@ -23,7 +23,7 @@ namespace ReFrontier.jpk
             if (m_shiftIndex < 0)
             {
                 m_shiftIndex = 7;
-                Debug.WriteLine("flag read from {0:X8}", s.Position);
+                //Debug.WriteLine("flag read from {0:X8}", s.Position);
                 m_flag = this.ReadByte(s);
             }
             return (byte)((m_flag >> m_shiftIndex) & 1);
@@ -43,7 +43,7 @@ namespace ReFrontier.jpk
                 {
                     if (jpkbit_lz(inStream) == 0)
                     {
-                        Debug.WriteLine("case 0");
+                        //Debug.WriteLine("case 0");
                         byte len = (byte)((jpkbit_lz(inStream) << 1) | jpkbit_lz(inStream));
                         byte off = ReadByte(inStream);
                         jpkcpy_lz(outBuffer, off, len + 3, ref outIndex);
@@ -58,7 +58,7 @@ namespace ReFrontier.jpk
                         int off = ((hi & 0x1F) << 8) | lo;
                         if (len != 0)
                         {
-                            Debug.WriteLine("case 1");
+                            //Debug.WriteLine("case 1");
                             jpkcpy_lz(outBuffer, off, len + 2, ref outIndex);
                             continue;
                         }
@@ -66,7 +66,7 @@ namespace ReFrontier.jpk
                         {
                             if (jpkbit_lz(inStream) == 0)
                             {
-                                Debug.WriteLine("case 2");
+                                //Debug.WriteLine("case 2");
                                 len = (byte)((jpkbit_lz(inStream) << 3) | (jpkbit_lz(inStream) << 2) | (jpkbit_lz(inStream) << 1) | jpkbit_lz(inStream));
                                 jpkcpy_lz(outBuffer, off, len + 2 + 8, ref outIndex);
                                 continue;
@@ -76,14 +76,14 @@ namespace ReFrontier.jpk
                                 byte temp = ReadByte(inStream);
                                 if (temp == 0xFF)
                                 {
-                                    Debug.WriteLine("case 3");
+                                    //Debug.WriteLine("case 3");
                                     for (int i = 0; i < off + 0x1B; i++)
                                         outBuffer[outIndex++] = ReadByte(inStream);
                                     continue;
                                 }
                                 else
                                 {
-                                    Debug.WriteLine("case 4");
+                                    //Debug.WriteLine("case 4");
                                     jpkcpy_lz(outBuffer, off, temp + 0x1a, ref outIndex);
                                 }
                             }

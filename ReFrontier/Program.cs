@@ -12,6 +12,7 @@ namespace ReFrontier
         static bool encrypt = false;
         static bool autoClose = false;
         static bool cleanUp = false;
+        static bool compress = false;
 
         static void Main(string[] args)
         {
@@ -25,6 +26,7 @@ namespace ReFrontier
                     "-log: Write log file (required for repacking)\n" +
                     "-pack: Repack directory (requires log file)\n" +
                     "-decryptOnly: Decrypt ecd files without unpacking\n" +
+                    "-compress: Pack file with jpk type 0 compression\n" +
                     "-encrypt: Encrypt input file with ecd algorithm\n" +
                     "-close: Close window after finishing process\n" +
                     "-cleanUp: Delete simple archives after unpacking", 
@@ -36,10 +38,11 @@ namespace ReFrontier
             string input = args[0];
             if (args.Any("-log".Contains)) createLog = true;
             if (args.Any("-pack".Contains)) repack = true;
-            if (args.Any("-decryptOnly".Contains)) decryptOnly = true;
+            if (args.Any("-decryptOnly".Contains)) { decryptOnly = true; repack = false; }
             if (args.Any("-encrypt".Contains)) { encrypt = true; repack = false; }
             if (args.Any("-close)".Contains)) autoClose = true;
             if (args.Any("-cleanUp)".Contains)) cleanUp = true;
+            if (args.Any("-compress)".Contains)) { compress = true; repack = false; }
 
             // Check file
             if (File.Exists(input) || Directory.Exists(input))
@@ -53,18 +56,20 @@ namespace ReFrontier
                         string[] inputFiles = Directory.GetFiles(input, "*.*", SearchOption.AllDirectories);
                         ProcessMultipleLevels(inputFiles);
                     }
-                    else if (repack) Pack.ProcessPackInput(input);  
+                    else if (repack) Pack.ProcessPackInput(input);
+                    else if (compress) Console.WriteLine("A directory was specified while in compression mode. Stopping.");
                     else if (encrypt) Console.WriteLine("A directory was specified while in encryption mode. Stopping.");
                 }
                 // Single file
                 else
                 {
-                    if (!repack && !encrypt)
+                    if (!repack && !encrypt && !compress)
                     {
                         string[] inputFiles = { input };
                         ProcessMultipleLevels(inputFiles);
                     }
                     else if (repack) Console.WriteLine("A single file was specified while in repacking mode. Stopping.");
+                    else if (compress) { Pack.JPKEncode(0, input, input, 6); Helpers.Print("File compressed.", false); }
                     else if (encrypt)
                     {
                         byte[] buffer = File.ReadAllBytes(input);

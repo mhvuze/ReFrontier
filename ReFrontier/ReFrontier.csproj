@@ -49,10 +49,12 @@
   <ItemGroup>
     <Compile Include="Crypto.cs" />
     <Compile Include="jpk\IJPKDecode.cs" />
+    <Compile Include="jpk\IJPKEncode.cs" />
     <Compile Include="jpk\JPKDecodeHFI.cs" />
     <Compile Include="jpk\JPKDecodeHFIRW.cs" />
     <Compile Include="jpk\JPKDecodeLz.cs" />
     <Compile Include="jpk\JPKDecodeRW.cs" />
+    <Compile Include="jpk\JPKEncodeRW.cs" />
     <Compile Include="Pack.cs" />
     <Compile Include="Unpack.cs" />
     <Compile Include="Helpers.cs" />
