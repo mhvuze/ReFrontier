@@ -88,15 +88,16 @@ namespace FrontierTextTool
 
             if (verbose) Console.WriteLine($"Filling array of size {eStringsLength.ToString("X8")}...");
             byte[] eStringsArray = new byte[eStringsLength];
-            for (int i = 0; i < stringDatabase.Count; i++)
+            for (int i = 0, j = 0; i < stringDatabase.Count; i++)
             {
                 if (stringDatabase[i].eString != "")
                 {
                     // Write string to string array
-                    int test = eStringLengths.Take(i).Sum();
-                    if (verbose) Console.WriteLine($"String: '{stringDatabase[i].eString}', Length: {eStringLengths[i] - 1}");
+                    int test = eStringLengths.Take(j).Sum();
+                    if (verbose) Console.WriteLine($"String: '{stringDatabase[i].eString}', Length: {eStringLengths[j] - 1}");
                     byte[] eStringArray = Encoding.GetEncoding("shift-jis").GetBytes(stringDatabase[i].eString);
-                    Array.Copy(eStringArray, 0, eStringsArray, eStringLengths.Take(i).Sum(), eStringLengths[i] - 1);
+                    Array.Copy(eStringArray, 0, eStringsArray, eStringLengths.Take(j).Sum(), eStringLengths[j] - 1);
+                    j++;
                 }
             }
 
@@ -215,7 +216,7 @@ namespace FrontierTextTool
             // Copy eStrings to new db
             for (int i = 0; i < stringDbOld.Count; i++)
             {
-                Console.Write($"\rUpdating entry {i}/{stringDbOld.Count}");
+                Console.Write($"\rUpdating entry {i+1}/{stringDbOld.Count}");
                 if (stringDbOld[i].eString != "")
                 {
                     var matchedNewObjs = stringDbNew.Where(x => x.Hash.Equals(stringDbOld[i].Hash));
@@ -225,6 +226,7 @@ namespace FrontierTextTool
                     }
                 }
             }
+            Console.WriteLine();
 
             // Using this approach because csvHelper would always escape some strings which might mess up in-game when copy-pasting where required
             string fileName = "csv\\" + Path.GetFileName(oldCsv);
@@ -233,7 +235,6 @@ namespace FrontierTextTool
             txtOutput.WriteLine("Offset\tHash\tjString\teString");
             foreach (var obj in stringDbNew) txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.jString}\t{obj.eString}");
             txtOutput.Close();
-
             File.Delete(newCsv);
         }
 
