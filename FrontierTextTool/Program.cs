@@ -26,13 +26,15 @@ namespace FrontierTextTool
 
             if (args[0] == "dump") DumpAndHash(args[1], Convert.ToInt32(args[2]), Convert.ToInt32(args[3]));
             if (args[0] == "insert") InsertStrings(args[1], args[2]);
+            if (args[0] == "merge") Merge(args[1], args[2]);
             if (!autoClose) { Console.WriteLine("Done"); Console.Read(); }
         }
 
         public class StringDatabase
         {
-            public UInt32 offset { get; set; }
-            public UInt32 hash { get; set; }
+            public UInt32 Offset { get; set; }
+            public UInt32 Hash { get; set; }
+            public string jString { get; set; }
             public string eString { get; set; }
         }
 
@@ -57,8 +59,8 @@ namespace FrontierTextTool
                     {
                         var record = new StringDatabase
                         {
-                            offset = csv.GetField<UInt32>("Offset"),
-                            hash = csv.GetField<UInt32>("Hash"),
+                            Offset = csv.GetField<UInt32>("Offset"),
+                            Hash = csv.GetField<UInt32>("Hash"),
                             eString = csv.GetField("eString")
                         };
                         stringDatabase.Add(record);
@@ -73,7 +75,7 @@ namespace FrontierTextTool
             {
                 if (obj.eString != "")
                 {
-                    eStringsOffsets.Add(obj.offset);
+                    eStringsOffsets.Add(obj.Offset);
                     eStringLengths.Add(GetNullterminatedStringLength(obj.eString));
                 }
             }
@@ -86,17 +88,15 @@ namespace FrontierTextTool
 
             if (verbose) Console.WriteLine($"Filling array of size {eStringsLength.ToString("X8")}...");
             byte[] eStringsArray = new byte[eStringsLength];
-            int procCount = 0;
-            foreach (var obj in stringDatabase)
+            for (int i = 0; i < stringDatabase.Count; i++)
             {
-                if (obj.eString != "")
+                if (stringDatabase[i].eString != "")
                 {
                     // Write string to string array
-                    int test = eStringLengths.Take(procCount).Sum();
-                    if (verbose) Console.WriteLine($"String: '{obj.eString}', Length: {eStringLengths[procCount] - 1}");
-                    byte[] eStringArray = Encoding.GetEncoding("shift-jis").GetBytes(obj.eString);
-                    Array.Copy(eStringArray, 0, eStringsArray, eStringLengths.Take(procCount).Sum(), eStringLengths[procCount] - 1);
-                    procCount++;
+                    int test = eStringLengths.Take(i).Sum();
+                    if (verbose) Console.WriteLine($"String: '{stringDatabase[i].eString}', Length: {eStringLengths[i] - 1}");
+                    byte[] eStringArray = Encoding.GetEncoding("shift-jis").GetBytes(stringDatabase[i].eString);
+                    Array.Copy(eStringArray, 0, eStringsArray, eStringLengths.Take(i).Sum(), eStringLengths[i] - 1);
                 }
             }
 
@@ -105,7 +105,7 @@ namespace FrontierTextTool
             {
                 if (p + 4 > inputArray.Length) continue;
                 int cur = BitConverter.ToInt32(inputArray, p);
-                if (offsetDict.ContainsKey(cur))
+                if (offsetDict.ContainsKey(cur) && p > 10000)
                 {
                     int replacement = 0; offsetDict.TryGetValue(cur, out replacement);
                     byte[] newPointer = BitConverter.GetBytes(replacement);
@@ -135,8 +135,8 @@ namespace FrontierTextTool
             FileUploadSFTP(buffer, $"/var/www/html/mhfo/dat/{Path.GetFileName(inputFile)}");
         }
 
-        // dump mhfpac.bin 4416 1289334
-        // dump mhfdat.bin 3040 3270334
+        // dump mhfpac.bin 4416 1278872
+        // dump mhfdat.bin 3072 3328538
         static void DumpAndHash(string input, int startOffset, int endOffset)
         {
             MemoryStream msInput = new MemoryStream(File.ReadAllBytes(input));
@@ -160,6 +160,81 @@ namespace FrontierTextTool
                 txtOutput.WriteLine($"{off}\t{Crc32Algorithm.Compute(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t");
             }
             txtOutput.Close();
+        }
+
+        // Merge old and updated csvs
+        static void Merge(string oldCsv, string newCsv)
+        {
+            // Read csv
+            var stringDbOld = new List<StringDatabase>();
+            using (var reader = new StreamReader(oldCsv, Encoding.GetEncoding("shift-jis")))
+            {
+                using (var csv = new CsvReader(reader))
+                {
+                    csv.Configuration.Delimiter = "\t";
+                    csv.Configuration.IgnoreQuotes = true;
+                    csv.Configuration.MissingFieldFound = null;
+                    csv.Read();
+                    csv.ReadHeader();
+                    while (csv.Read())
+                    {
+                        var record = new StringDatabase
+                        {
+                            Hash = csv.GetField<UInt32>("Hash"),
+                            eString = csv.GetField("eString")
+                        };
+                        stringDbOld.Add(record);
+                    }
+                }
+            }
+
+            var stringDbNew = new List<StringDatabase>();
+            using (var reader = new StreamReader(newCsv, Encoding.GetEncoding("shift-jis")))
+            {
+                using (var csv = new CsvReader(reader))
+                {
+                    csv.Configuration.Delimiter = "\t";
+                    csv.Configuration.IgnoreQuotes = true;
+                    csv.Configuration.MissingFieldFound = null;
+                    csv.Read();
+                    csv.ReadHeader();
+                    while (csv.Read())
+                    {
+                        var record = new StringDatabase
+                        {
+                            Offset = csv.GetField<UInt32>("Offset"),
+                            Hash = csv.GetField<UInt32>("Hash"),
+                            eString = csv.GetField("eString"),
+                            jString = csv.GetField("jString")
+                        };
+                        stringDbNew.Add(record);
+                    }
+                }
+            }
+
+            // Copy eStrings to new db
+            for (int i = 0; i < stringDbOld.Count; i++)
+            {
+                Console.Write($"\rUpdating entry {i}/{stringDbOld.Count}");
+                if (stringDbOld[i].eString != "")
+                {
+                    var matchedNewObjs = stringDbNew.Where(x => x.Hash.Equals(stringDbOld[i].Hash));
+                    if (matchedNewObjs.Count() > 0)
+                    {
+                        foreach (var obj in matchedNewObjs) obj.eString = stringDbOld[i].eString;
+                    }
+                }
+            }
+
+            // Using this approach because csvHelper would always escape some strings which might mess up in-game when copy-pasting where required
+            string fileName = "csv\\" + Path.GetFileName(oldCsv);
+            if (File.Exists(fileName)) File.Delete(fileName);
+            StreamWriter txtOutput = new StreamWriter(fileName, true, Encoding.GetEncoding("shift-jis"));
+            txtOutput.WriteLine("Offset\tHash\tjString\teString");
+            foreach (var obj in stringDbNew) txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.jString}\t{obj.eString}");
+            txtOutput.Close();
+
+            File.Delete(newCsv);
         }
 
         // Get byte length of string (avoids issues with special spacing characters)
