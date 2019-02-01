@@ -57,7 +57,7 @@ namespace ReFrontier
                         offset += fileData.Length;
                     }
                 }
-                Helpers.PrintUpdateEntry(fileName);
+                Helpers.GetUpdateEntry(fileName);
             }
             Console.WriteLine("==============================");
         }

@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace FrontierTextTool
@@ -38,7 +36,20 @@ namespace FrontierTextTool
             public string eString { get; set; }
         }
 
-        // insert src\mhfpac.bin csv\mhfpac_01.csv
+        // Update MHFUP_00.DAT
+        static void UpdateList(string updEntry)
+        {
+            string file = updEntry.Split(',')[3].Split('\\')[1];
+            string[] lines = File.ReadAllLines("src\\MHFUP_00.DAT");
+            for (int i = 0; i < lines.Count(); i++)
+            {
+                if (lines[i].Contains(file)) lines[i] = updEntry.Replace("output", "dat");
+            }
+            File.WriteAllLines("src\\MHFUP_00.DAT", lines);
+            FileUploadSFTP(File.ReadAllBytes("src\\MHFUP_00.DAT"), $"/var/www/html/mhfo/MHFUP_00.DAT");
+        }
+
+        // Append translations and update pointers
         static void InsertStrings(string inputFile, string inputCsv)
         {
             Console.WriteLine($"Processing {inputFile}...");
@@ -130,7 +141,10 @@ namespace FrontierTextTool
             byte[] bufferMeta = File.ReadAllBytes($"{outputFile}.meta");
             buffer = ReFrontier.Crypto.encEcd(buffer, bufferMeta);
             File.WriteAllBytes(outputFile, buffer);
-            ReFrontier.Helpers.PrintUpdateEntry(outputFile);
+
+            // Update list
+            string updEntry = ReFrontier.Helpers.GetUpdateEntry(outputFile);
+            UpdateList(updEntry);
 
             // Upload to ftp
             FileUploadSFTP(buffer, $"/var/www/html/mhfo/dat/{Path.GetFileName(inputFile)}");

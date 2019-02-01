@@ -78,7 +78,7 @@ namespace ReFrontier
                         buffer = Crypto.encEcd(buffer, bufferMeta);
                         File.WriteAllBytes(input, buffer);
                         Helpers.Print("File encrypted.", false);
-                        Helpers.PrintUpdateEntry(input);
+                        Helpers.GetUpdateEntry(input);
                     }
                 }
                 Console.WriteLine("Done.");

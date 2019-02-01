@@ -80,17 +80,16 @@ namespace ReFrontier
             return hex.ToString();
         }
 
-        // Print info for MHFUP_00.DAT
-        public static void PrintUpdateEntry(string fileName)
+        // Return info for MHFUP_00.DAT
+        public static string GetUpdateEntry(string fileName)
         {
             DateTime date = File.GetLastWriteTime(fileName);
             string dateHex2 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16").Substring(0, 8);
             string dateHex1 = date.Subtract(new DateTime(1601, 1, 1)).Ticks.ToString("X16").Substring(8);
             byte[] repackData = File.ReadAllBytes(fileName);
             uint crc32 = Crc32Algorithm.Compute(repackData);
-            //Console.WriteLine("==============================");
             Console.WriteLine($"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName.Replace("output", "dat")},{repackData.Length},0");
-            //Clipboard.SetText($"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName},{repackData.Length},0");
+            return $"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName},{repackData.Length},0";
         }
 
         // Header <-> extensions
