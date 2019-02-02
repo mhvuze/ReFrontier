@@ -1,5 +1,6 @@
 ﻿using CsvHelper;
 using Force.Crc32;
+using ReFrontier;
 using Renci.SshNet;
 using System;
 using System.Collections.Generic;
@@ -136,14 +137,14 @@ namespace FrontierTextTool
             File.WriteAllBytes(outputFile, outputArray);
 
             // Pack with jpk type 0 and encrypt file with ecd
-            ReFrontier.Pack.JPKEncode(0, outputFile, outputFile, 15);
+            Pack.JPKEncode(0, outputFile, outputFile, 15);
             byte[] buffer = File.ReadAllBytes(outputFile);
             byte[] bufferMeta = File.ReadAllBytes($"{outputFile}.meta");
-            buffer = ReFrontier.Crypto.encEcd(buffer, bufferMeta);
+            buffer = Crypto.encEcd(buffer, bufferMeta);
             File.WriteAllBytes(outputFile, buffer);
 
             // Update list
-            string updEntry = ReFrontier.Helpers.GetUpdateEntry(outputFile);
+            string updEntry = Helpers.GetUpdateEntry(outputFile);
             UpdateList(updEntry);
 
             // Upload to ftp
@@ -154,7 +155,26 @@ namespace FrontierTextTool
         // dump mhfdat.bin 3072 3328538
         static void DumpAndHash(string input, int startOffset, int endOffset)
         {
-            MemoryStream msInput = new MemoryStream(File.ReadAllBytes(input));
+            byte[] buffer = File.ReadAllBytes(input);
+
+            // Decrypt if ecd            
+            if (BitConverter.ToInt32(buffer, 0) == 0x1A646365)
+            {
+                Console.WriteLine("ECD Header detected.");
+                Crypto.decEcd(buffer);
+
+                byte[] ecdHeader = new byte[0x10];
+                Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
+                byte[] bufferStripped = new byte[buffer.Length - 0x10];
+                Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
+
+                File.WriteAllBytes(input, bufferStripped);
+                buffer = bufferStripped;
+                File.WriteAllBytes($"output\\{input}.meta", ecdHeader);
+                Console.WriteLine("File decrypted.");
+            }
+
+            MemoryStream msInput = new MemoryStream(buffer);
             BinaryReader brInput = new BinaryReader(msInput);
 
             Console.WriteLine($"Strings at: 0x{startOffset.ToString("X8")} - 0x{endOffset.ToString("X8")}. Size 0x{(endOffset - startOffset).ToString("X8")}");
@@ -168,7 +188,7 @@ namespace FrontierTextTool
             while (brInput.BaseStream.Position < endOffset)
             {
                 long off = brInput.BaseStream.Position;
-                string str = ReFrontier.Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).
+                string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).
                     Replace("\t", "<TAB>"). // Replace tab
                     Replace("\r\n", "<CLINE>"). // Replace carriage return
                     Replace("\n", "<NLINE>"); // Replace new line
