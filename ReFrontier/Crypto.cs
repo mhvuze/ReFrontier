@@ -29,9 +29,20 @@ namespace ReFrontier
             return rnd;
         }
 
-        static UInt32 getRndExf(int index, ref UInt32 rnd)
+        static byte[] CreateXorkeyExf(byte[] header)
         {
-            return 0;
+            byte[] keyBuffer = new byte[16];
+            int index = BitConverter.ToUInt16(header, 4);
+            UInt32 tempVal = BitConverter.ToUInt32(header, 0xc);
+            UInt32 value = BitConverter.ToUInt32(header, 0xc);
+            for (int i = 0; i < 4; i++)
+            {
+                tempVal = tempVal * LoadUInt32BE(rndBufExf, index * 8) + LoadUInt32BE(rndBufExf, index * 8 + 4);
+                UInt32 key = tempVal ^ value;
+                byte[] tempKey = BitConverter.GetBytes(key);
+                Array.Copy(tempKey, 0, keyBuffer, i * 4, 4);
+            }
+            return keyBuffer;
         }
 
         public static void decEcd(byte[] buffer)
@@ -122,7 +133,28 @@ namespace ReFrontier
 
         public static void decExf(byte[] buffer)
         {
-
+            byte[] header = new byte[16];
+            Array.Copy(buffer, header, header.Length);
+            if (BitConverter.ToUInt32(header, 0) == 0x1a667865)
+            {
+                byte[] keybuf = CreateXorkeyExf(header);
+                for (int i = 16; i < buffer.Length - header.Length; i++)
+                {
+                    UInt32 r28 = (UInt32)(i - 0x10);
+                    byte r8 = buffer[i];
+                    int index = (int)(r28 & 0xf);
+                    UInt32 r4 = r8 ^ r28;
+                    UInt32 r12 = keybuf[index];
+                    UInt32 r0 = (r4 & 0xf0) >> 4;
+                    UInt32 r7 = keybuf[r0];
+                    UInt32 r9 = r4 >> 4;
+                    UInt32 r5 = r7 >> 4;
+                    r9 = r9 ^ r12;
+                    UInt32 r26 = r5 ^ r4;
+                    r26 = (UInt32)(r26 & ~0xf0) | ((r9 & 0xf) << 4);
+                    buffer[i] = (byte)r26;
+                }
+            }
         }
     }
 }

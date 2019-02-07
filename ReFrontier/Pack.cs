@@ -48,7 +48,8 @@ namespace ReFrontier
                     for (int i = 0; i < count; i++)
                     {
                         Console.WriteLine($"{input}\\{listFileNames[i]}");
-                        byte[] fileData = File.ReadAllBytes($"{input}\\{listFileNames[i]}");
+                        byte[] fileData = new byte[0];
+                        if (listFileNames[i] != "null") { fileData = File.ReadAllBytes($"{input}\\{listFileNames[i]}"); }
                         bwOutput.BaseStream.Seek(0x04 + i * 0x08, SeekOrigin.Begin);
                         bwOutput.Write(offset);
                         bwOutput.Write(fileData.Length);

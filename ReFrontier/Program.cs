@@ -126,11 +126,11 @@ namespace ReFrontier
             {
                 Console.WriteLine("EXF Header detected.");
                 byte[] buffer = File.ReadAllBytes(input);
-                /*Crypto.decexf(buffer);
+                Crypto.decExf(buffer);
                 byte[] bufferStripped = new byte[buffer.Length - 0x10];
                 Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
-                File.WriteAllBytes("out.bin", bufferStripped);
-                Helpers.Print("File decrypted. Processing output.", false);*/
+                File.WriteAllBytes(input, bufferStripped);
+                Console.WriteLine("File decrypted.");
             }
             // JKR Header
             else if (fileMagic == 0x1A524B4A)
