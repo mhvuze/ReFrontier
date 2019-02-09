@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReFrontier", "ReFrontier\Re
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrontierTextTool", "FrontierTextTool\FrontierTextTool.csproj", "{DE2AB100-24C7-4176-9FDB-E979A97045DE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrontierDataTool", "FrontierDataTool\FrontierDataTool.csproj", "{0FAAAFE5-D49F-4C64-BE2C-0F78C13DCEEB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{DE2AB100-24C7-4176-9FDB-E979A97045DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE2AB100-24C7-4176-9FDB-E979A97045DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE2AB100-24C7-4176-9FDB-E979A97045DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FAAAFE5-D49F-4C64-BE2C-0F78C13DCEEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FAAAFE5-D49F-4C64-BE2C-0F78C13DCEEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FAAAFE5-D49F-4C64-BE2C-0F78C13DCEEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FAAAFE5-D49F-4C64-BE2C-0F78C13DCEEB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
