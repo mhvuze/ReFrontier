@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Windows.Forms;
 
-namespace ReFrontier
+namespace LibReFrontier
 {
     public class Helpers
     {
@@ -90,6 +89,38 @@ namespace ReFrontier
             uint crc32 = Crc32Algorithm.Compute(repackData);
             Console.WriteLine($"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName.Replace("output", "dat")},{repackData.Length},0");
             return $"{crc32.ToString("X8")},{dateHex1},{dateHex2},{fileName},{repackData.Length},0";
+        }
+
+        // Search for byte array
+        public static int GetOffsetOfArray(byte[] haystack, byte[] needle)
+        {
+            for (int i = 0; i <= haystack.Length - needle.Length; i++)
+            {
+                if (MatchArrays(haystack, needle, i))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        static bool MatchArrays(byte[] haystack, byte[] needle, int start)
+        {
+            if (needle.Length + start > haystack.Length)
+            {
+                return false;
+            }
+            else
+            {
+                for (int i = 0; i < needle.Length; i++)
+                {
+                    if (needle[i] != haystack[i + start])
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         // Header <-> extensions

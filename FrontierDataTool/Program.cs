@@ -1,5 +1,5 @@
 ﻿using CsvHelper;
-using ReFrontier;
+using LibReFrontier;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -60,9 +60,11 @@ namespace FrontierDataTool
             if (args.Length < 2) { Console.WriteLine("Too few arguments."); return; }
 
             if (args[0] == "dump") DumpData();
+            if (args[0] == "modshop") ModShop(args[1]);
             Console.WriteLine("Done"); Console.Read();
         }
 
+        // Dump weapon and armor data
         static void DumpData()
         {
             // Get skill name dictionary
@@ -240,6 +242,51 @@ namespace FrontierDataTool
                 writer.Configuration.Delimiter = "\t";
                 writer.WriteRecords(meleeEntries);
             }
+        }
+
+        // Add all-items shop to file
+        static void ModShop(string file)
+        {
+            // Generate shop array
+            int count = 16700;
+            byte[] shopArray = new byte[(count * 8) + 5 * 32];
+            int blockSize = (count / 5) * 8;
+
+            for (int i = 0; i < count; i++)
+            {
+                byte[] id = BitConverter.GetBytes((Int16)(i + 1));
+                byte[] item = new byte[8];
+                Array.Copy(id, item, 2);
+                Array.Copy(item, 0, shopArray, i * 8, 8);
+            }
+
+            // Append modshop data to file
+            byte[] inputArray = File.ReadAllBytes(file);
+            byte[] outputArray = new byte[inputArray.Length + shopArray.Length];
+            Array.Copy(inputArray, outputArray, inputArray.Length);
+            Array.Copy(shopArray, 0, outputArray, inputArray.Length, shopArray.Length);
+
+            // Find and modify item shop data pointer
+            byte[] needle = new byte[] { 0x0F, 01, 01, 00, 00, 00, 00, 00, 03, 01, 01, 00, 00, 00, 00, 00 };
+            int offsetData = Helpers.GetOffsetOfArray(outputArray, needle);
+            if (offsetData != -1)
+            {
+                Console.WriteLine($"Found shop inventory to modify at 0x{offsetData.ToString("X8")}.");
+                byte[] offsetArray = BitConverter.GetBytes(offsetData);
+                offsetArray.Reverse();
+                int offsetPointer = Helpers.GetOffsetOfArray(outputArray, offsetArray);
+                if (offsetPointer != -1)
+                {
+                    Console.WriteLine($"Found pointer at 0x{offsetPointer.ToString("X8")}.");
+                    byte[] patchedPointer = BitConverter.GetBytes(inputArray.Length);
+                    patchedPointer.Reverse();
+                    Array.Copy(patchedPointer, 0, outputArray, offsetPointer, patchedPointer.Length);
+
+                    File.WriteAllBytes(file, outputArray);
+                }
+                else Console.WriteLine("Could not find pointer, please check manually and correct code.");
+            }
+            else Console.WriteLine("Could not find needle, please check manually and correct code.");
         }
 
         static string StringFromPointer(BinaryReader brInput)

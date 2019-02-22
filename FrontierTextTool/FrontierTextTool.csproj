@@ -63,6 +63,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\LibReFrontier\LibReFrontier.csproj">
+      <Project>{65dfe92c-fed7-419a-9732-854ba5e9d162}</Project>
+      <Name>LibReFrontier</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ReFrontier\ReFrontier.csproj">
       <Project>{4fa20038-15b6-4f86-95f7-6e8ef3b8c94d}</Project>
       <Name>ReFrontier</Name>

@@ -1,4 +1,4 @@
-﻿using Force.Crc32;
+﻿using LibReFrontier;
 using ReFrontier.jpk;
 using System;
 using System.Collections.Generic;
