@@ -10,6 +10,7 @@ namespace FrontierDataTool
     {
         public class ArmorDataEntry
         {
+            public String equipClass { get; set; }
             public String name { get; set; }
             public Int16 modelIdMale { get; set; }
             public Int16 modelIdFemale { get; set; }

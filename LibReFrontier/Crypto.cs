@@ -1,9 +1,9 @@
 ﻿using Force.Crc32;
 using System;
 
-// by enler
-namespace ReFrontier
+namespace LibReFrontier
 {
+    // With major help from enler
     public class Crypto
     {
         static UInt32 LoadUInt32BE(byte[] buffer, int offset)

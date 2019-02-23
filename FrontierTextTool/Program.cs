@@ -1,5 +1,4 @@
 ﻿using CsvHelper;
-using Force.Crc32;
 using ReFrontier;
 using LibReFrontier;
 using Renci.SshNet;
@@ -196,7 +195,7 @@ namespace FrontierTextTool
                     Replace("\t", "<TAB>"). // Replace tab
                     Replace("\r\n", "<CLINE>"). // Replace carriage return
                     Replace("\n", "<NLINE>"); // Replace new line
-                txtOutput.WriteLine($"{off}\t{Crc32Algorithm.Compute(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t");
+                txtOutput.WriteLine($"{off}\t{Helpers.GetCrc32(Encoding.GetEncoding("shift-jis").GetBytes(str))}\t{str}\t");
             }
             txtOutput.Close();
         }

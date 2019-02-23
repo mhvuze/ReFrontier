@@ -79,6 +79,12 @@ namespace LibReFrontier
             return hex.ToString();
         }
 
+        // CRC32 byte array - just to remove dependency from TextTool
+        public static uint GetCrc32(byte[] array)
+        {
+            return Crc32Algorithm.Compute(array);
+        }
+
         // Return info for MHFUP_00.DAT
         public static string GetUpdateEntry(string fileName)
         {

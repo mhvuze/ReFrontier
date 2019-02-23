@@ -53,7 +53,8 @@ namespace FrontierDataTool
 
         public static string[] elementIds = new string[] { "なし", "火", "水", "雷", "龍", "氷", "炎", "光", "雷極", "天翔", "熾凍", "黒焔", "奏", "闇", "紅魔", "風", "響", "灼零", "皇鳴" };
         public static string[] ailmentIds = new string[] { "なし", "毒", "麻痺", "睡眠", "爆破" };
-        public static string[] classIds = new string[] { "大剣", "1", "ハンマー", "ランス", "片手剣", "5", "双剣", "太刀", "狩猟笛", "ガンランス", "10", "穿龍棍", "スラッシュアックスＦ", "マグネットスパイク" };
+        public static string[] wClassIds = new string[] { "大剣", "1", "ハンマー", "ランス", "片手剣", "5", "双剣", "太刀", "狩猟笛", "ガンランス", "10", "穿龍棍", "スラッシュアックスＦ", "マグネットスパイク" };
+        public static string[] aClassIds = new string[] { "頭", "胴", "腕", "腰", "脚" };
 
         static void Main(string[] args)
         {
@@ -88,6 +89,19 @@ namespace FrontierDataTool
             brInput = new BinaryReader(msInput);
 
             // Dump armor data
+            int totalCount = 0;
+            for (int i = 0; i < 5; i++)
+            {
+                // Get raw data
+                brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+                int entryCount = (eOffset - sOffset) / 0x48;
+                totalCount += entryCount;
+            }
+            Console.WriteLine($"Total armor count: {totalCount}");
+
+            Structs.ArmorDataEntry[] armorEntries = new Structs.ArmorDataEntry[totalCount];
+            int currentCount = 0;
             for (int i = 0; i < 5; i++)
             {
                 // Get raw data
@@ -95,12 +109,12 @@ namespace FrontierDataTool
                 brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
                 int entryCount = (eOffset - sOffset) / 0x48;
                 brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-                Console.WriteLine(entryCount);
+                Console.WriteLine($"{aClassIds[i]} count: {entryCount}");
 
-                Structs.ArmorDataEntry[] armorEntries = new Structs.ArmorDataEntry[entryCount];
                 for (int j = 0; j < entryCount; j++)
                 {
                     Structs.ArmorDataEntry entry = new Structs.ArmorDataEntry();
+                    entry.equipClass = aClassIds[i];
                     entry.modelIdMale = brInput.ReadInt16();
                     entry.modelIdFemale = brInput.ReadInt16();
                     byte bitfield = brInput.ReadByte();
@@ -162,7 +176,7 @@ namespace FrontierDataTool
                     entry.unk18 = brInput.ReadInt16();
                     entry.unk19 = brInput.ReadInt16();
 
-                    armorEntries[j] = entry;
+                    armorEntries[j + currentCount] = entry;
                 }
 
                 // Get strings
@@ -171,33 +185,34 @@ namespace FrontierDataTool
                 for (int j = 0; j < entryCount - 1; j++)
                 {
                     string name = StringFromPointer(brInput);
-                    armorEntries[j].name = name;
+                    armorEntries[j + currentCount].name = name;
                 }
+                currentCount += entryCount;
+            }
 
-                // Write csv
-                using (var textWriter = new StreamWriter($"{i}.csv", false, Encoding.GetEncoding("shift-jis")))
-                {
-                    var writer = new CsvWriter(textWriter);
-                    writer.Configuration.Delimiter = "\t";
-                    writer.WriteRecords(armorEntries);
-                }
+            // Write armor csv
+            using (var textWriter = new StreamWriter($"Armor.csv", false, Encoding.GetEncoding("shift-jis")))
+            {
+                var writer = new CsvWriter(textWriter);
+                writer.Configuration.Delimiter = "\t";
+                writer.WriteRecords(armorEntries);
             }
 
             // Dump melee weapon data
             brInput.BaseStream.Seek(soMelee, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoMelee, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
-            int entryCountWp = (eOffset - sOffset) / 0x34;
+            int entryCountMelee = (eOffset - sOffset) / 0x34;
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            Console.WriteLine(entryCountWp);
+            Console.WriteLine($"Melee count: {entryCountMelee}");
 
-            Structs.MeleeWeaponEntry[] meleeEntries = new Structs.MeleeWeaponEntry[entryCountWp];
-            for (int i = 0; i < entryCountWp; i++)
+            Structs.MeleeWeaponEntry[] meleeEntries = new Structs.MeleeWeaponEntry[entryCountMelee];
+            for (int i = 0; i < entryCountMelee; i++)
             {
                 Structs.MeleeWeaponEntry entry = new Structs.MeleeWeaponEntry();
                 entry.modelId = brInput.ReadInt16();
                 entry.modelIdData = GetModelIdData(entry.modelId);
                 entry.rarity = brInput.ReadByte();
-                entry.classId = classIds[brInput.ReadByte()];
+                entry.classId = wClassIds[brInput.ReadByte()];
                 entry.zennyCost = brInput.ReadInt32();
                 entry.sharpnessId = brInput.ReadInt16();
                 entry.rawDamage = brInput.ReadInt16();
@@ -230,7 +245,7 @@ namespace FrontierDataTool
             // Get strings
             brInput.BaseStream.Seek(soStringMelee, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
-            for (int j = 0; j < entryCountWp - 1; j++)
+            for (int j = 0; j < entryCountMelee - 1; j++)
             {
                 string name = StringFromPointer(brInput);
                 meleeEntries[j].name = name;
