@@ -76,6 +76,7 @@ namespace FrontierDataTool
         {
             public String name { get; set; }
             public Int16 modelId { get; set; }
+            public String modelIdData { get; set; }
             public Byte rarity { get; set; }
             public String classId { get; set; }
             public Int32 zennyCost { get; set; }

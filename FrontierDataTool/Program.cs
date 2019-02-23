@@ -59,16 +59,16 @@ namespace FrontierDataTool
         {
             if (args.Length < 2) { Console.WriteLine("Too few arguments."); return; }
 
-            if (args[0] == "dump") DumpData();
-            if (args[0] == "modshop") ModShop(args[1]);
+            if (args[0] == "dump") DumpData(args[1]);  // mhfpac.bin
+            if (args[0] == "modshop") ModShop(args[1]); // mhfdat.bin
             Console.WriteLine("Done"); Console.Read();
         }
 
         // Dump weapon and armor data
-        static void DumpData()
+        static void DumpData(string file)
         {
             // Get skill name dictionary
-            MemoryStream msInput = new MemoryStream(File.ReadAllBytes("mhfpac.bin"));
+            MemoryStream msInput = new MemoryStream(File.ReadAllBytes(file));
             BinaryReader brInput = new BinaryReader(msInput);
             brInput.BaseStream.Seek(soStringSkillPt, SeekOrigin.Begin); int sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoStringSkillPt, SeekOrigin.Begin); int eOffset = brInput.ReadInt32();
@@ -195,6 +195,7 @@ namespace FrontierDataTool
             {
                 Structs.MeleeWeaponEntry entry = new Structs.MeleeWeaponEntry();
                 entry.modelId = brInput.ReadInt16();
+                entry.modelIdData = GetModelIdData(entry.modelId);
                 entry.rarity = brInput.ReadByte();
                 entry.classId = classIds[brInput.ReadByte()];
                 entry.zennyCost = brInput.ReadInt32();
@@ -296,6 +297,22 @@ namespace FrontierDataTool
             brInput.BaseStream.Seek(off, SeekOrigin.Begin);
             string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis"));
             brInput.BaseStream.Seek(pos, SeekOrigin.Begin);
+            return str;
+        }
+
+        static string GetModelIdData(int id)
+        {
+            string str = "";
+            if (id >= 0 && id < 1000) str = $"we{id.ToString("D3")}";
+            else if (id < 2000) str = $"wf{(id - 1000).ToString("D3")}";
+            else if (id < 3000) str = $"wg{(id - 2000).ToString("D3")}";
+            else if (id < 4000) str = $"wh{(id - 3000).ToString("D3")}";
+            else if (id < 5000) str = $"wi{(id - 4000).ToString("D3")}";
+            else if (id < 7000) str = $"wk{(id - 6000).ToString("D3")}";
+            else if (id < 8000) str = $"wl{(id - 7000).ToString("D3")}";
+            else if (id < 9000) str = $"wm{(id - 8000).ToString("D3")}";
+            else if (id < 10000) str = $"wg{(id - 9000).ToString("D3")}";
+            else str = "Unmapped";
             return str;
         }
     }
