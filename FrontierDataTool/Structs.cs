@@ -106,5 +106,65 @@ namespace FrontierDataTool
             public Int32 unk16 { get; set; }
             public Int32 unk17 { get; set; }
         }
+
+        public class RangedWeaponEntry
+        {
+            public String name { get; set; }
+            public Int16 modelId { get; set; }
+            public String modelIdData { get; set; }
+            public Byte rarity { get; set; }
+            public Byte maxSlotsMaybe { get; set; }
+            public String classId { get; set; }
+            public Byte unk2_1 { get; set; }
+            public String eqType { get; set; }
+            public Byte unk2_3 { get; set; }
+            public Byte unk3_1 { get; set; }
+            public Byte unk3_2 { get; set; }
+            public Byte unk3_3 { get; set; }
+            public Byte unk3_4 { get; set; }
+            public Byte unk4_1 { get; set; }
+            public Byte unk4_2 { get; set; }
+            public Byte unk4_3 { get; set; }
+            public Byte unk4_4 { get; set; }
+            public Byte unk5_1 { get; set; }
+            public Byte unk5_2 { get; set; }
+            public Byte unk5_3 { get; set; }
+            public Byte unk5_4 { get; set; }
+            public Int32 zennyCost { get; set; }
+            public Int16 rawDamage { get; set; }
+            public Int16 defense { get; set; }
+            public Byte recoilMaybe { get; set; }
+            public Byte slots { get; set; }
+            public SByte affinity { get; set; }
+            public Byte sortOrderMaybe { get; set; }
+            public Byte unk6_1 { get; set; }
+            public String elementId { get; set; }
+            public Int32 eleDamage { get; set; }
+            public Byte unk6_4 { get; set; }
+            public Byte unk7_1 { get; set; }
+            public Byte unk7_2 { get; set; }
+            public Byte unk7_3 { get; set; }
+            public Byte unk7_4 { get; set; }
+            public Byte unk8_1 { get; set; }
+            public Byte unk8_2 { get; set; }
+            public Byte unk8_3 { get; set; }
+            public Byte unk8_4 { get; set; }
+            public Byte unk9_1 { get; set; }
+            public Byte unk9_2 { get; set; }
+            public Byte unk9_3 { get; set; }
+            public Byte unk9_4 { get; set; }
+            public Byte unk10_1 { get; set; }
+            public Byte unk10_2 { get; set; }
+            public Byte unk10_3 { get; set; }
+            public Byte unk10_4 { get; set; }
+            public Byte unk11_1 { get; set; }
+            public Byte unk11_2 { get; set; }
+            public Byte unk11_3 { get; set; }
+            public Byte unk11_4 { get; set; }
+            public Byte unk12_1 { get; set; }
+            public Byte unk12_2 { get; set; }
+            public Byte unk12_3 { get; set; }
+            public Byte unk12_4 { get; set; }
+        }
     }
 }
