@@ -52,8 +52,9 @@ namespace ReFrontier
                 // Check file header and get extension
                 byte[] header = new byte[4];
                 Array.Copy(entryData, header, 4);
-                int headerInt = BitConverter.ToInt32(header, 0);
+                uint headerInt = BitConverter.ToUInt32(header, 0);
                 string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
+                if (extension == null) extension = Helpers.CheckForMagic(headerInt, entryData);
                 if (extension == null) extension = "bin";
 
                 // Print info
@@ -149,18 +150,10 @@ namespace ReFrontier
                     // Get extension
                     byte[] header = new byte[4];
                     Array.Copy(outBuffer, header, 4);
-                    long headerInt = BitConverter.ToInt32(header, 0);
+                    uint headerInt = BitConverter.ToUInt32(header, 0);                    
                     string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
+                    if (extension == null) extension = Helpers.CheckForMagic(headerInt, outBuffer);
                     if (extension == null) extension = "bin";
-
-                    // Special treatment for the model files
-                    if (headerInt == 1)
-                    {
-                        header = new byte[8];
-                        Array.Copy(outBuffer, header, 8);
-                        headerInt = BitConverter.ToInt64(header, 0);
-                        if (headerInt == 17179869185) extension = "fmod";
-                    }
 
                     FileInfo fileInfo = new FileInfo(input);
                     string output = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}.{extension}";

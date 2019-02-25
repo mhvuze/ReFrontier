@@ -141,5 +141,31 @@ namespace LibReFrontier
             png = 0x474e5089,
             tmh = 1213027374    // iOS MHFU texture
         }
+
+        // Get file extension for files without unique 4-byte magic
+        public static string CheckForMagic(uint headerInt, byte[] data)
+        {
+            byte[] header;
+            string extension = null;
+
+            if (headerInt == 1)
+            {
+                Console.WriteLine("Im a model");
+                header = new byte[8];
+                Array.Copy(data, header, 8);
+                long headerInt64 = BitConverter.ToInt64(header, 0);
+                if (headerInt64 == 17179869185) extension = "fmod";
+            }
+            else if (headerInt == 0xC0000000)
+            {
+                Console.WriteLine("Im a skel");
+                header = new byte[12];
+                Array.Copy(data, header, 12);
+                headerInt = BitConverter.ToUInt32(header, 8);
+                if (headerInt == data.Length) extension = "fskl";
+            }
+
+            return extension;
+        }
     }
 }
