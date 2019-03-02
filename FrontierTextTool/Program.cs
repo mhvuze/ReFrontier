@@ -26,6 +26,7 @@ namespace FrontierTextTool
             if (args[0] == "dump") DumpAndHash(args[1], Convert.ToInt32(args[2]), Convert.ToInt32(args[3]));
             if (args[0] == "insert") InsertStrings(args[1], args[2]);
             if (args[0] == "merge") Merge(args[1], args[2]);
+            if (args[0] == "cleanTrados") CleanTrados(args[1]);
             if (!autoClose) { Console.WriteLine("Done"); Console.Read(); }
         }
 
@@ -48,6 +49,17 @@ namespace FrontierTextTool
             }
             File.WriteAllLines("src\\MHFUP_00.DAT", lines);
             FileUploadSFTP(File.ReadAllBytes("src\\MHFUP_00.DAT"), $"/var/www/html/mhfo/MHFUP_00.DAT");
+        }
+
+        // Clean pollution caused by Trados
+        static void CleanTrados(string file)
+        {
+            string text = File.ReadAllText(file, Encoding.UTF8);
+            text = text.Replace("。 ", "。");
+            text = text.Replace("！ ", "！");
+            text = text.Replace("？ ", "？");
+            File.WriteAllText(file, text, Encoding.UTF8);
+            Console.WriteLine("Cleaned up");
         }
 
         // Append translations and update pointers
@@ -159,24 +171,6 @@ namespace FrontierTextTool
         static void DumpAndHash(string input, int startOffset, int endOffset)
         {
             byte[] buffer = File.ReadAllBytes(input);
-
-            // Decrypt if ecd            
-            if (BitConverter.ToInt32(buffer, 0) == 0x1A646365)
-            {
-                Console.WriteLine("ECD Header detected.");
-                Crypto.decEcd(buffer);
-
-                byte[] ecdHeader = new byte[0x10];
-                Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
-                byte[] bufferStripped = new byte[buffer.Length - 0x10];
-                Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
-
-                File.WriteAllBytes(input, bufferStripped);
-                buffer = bufferStripped;
-                File.WriteAllBytes($"output\\{input}.meta", ecdHeader);
-                Console.WriteLine("File decrypted.");
-            }
-
             MemoryStream msInput = new MemoryStream(buffer);
             BinaryReader brInput = new BinaryReader(msInput);
 

@@ -61,8 +61,8 @@ namespace FrontierDataTool
         {
             if (args.Length < 2) { Console.WriteLine("Too few arguments."); return; }
 
-            if (args[0] == "dump") DumpData(args[1], args[2]);   // mhfpac.bin mhfdat.bin
-            if (args[0] == "modshop") ModShop(args[1]); // mhfdat.bin
+            if (args[0] == "dump") DumpData(args[1], args[2]);      // mhfpac.bin mhfdat.bin
+            if (args[0] == "modshop") ModShop(args[1]);             // mhfdat.bin
             Console.WriteLine("Done"); Console.Read();
         }
 
@@ -348,11 +348,50 @@ namespace FrontierDataTool
             }
         }
 
-        // Add all-items shop to file
+        // Add all-items shop to file, change item prices, change armor prices
         static void ModShop(string file)
         {
+            MemoryStream msInput = new MemoryStream(File.ReadAllBytes(file));
+            BinaryReader brInput = new BinaryReader(msInput);
+            BinaryWriter brOutput = new BinaryWriter(File.Open(file, FileMode.Open));
+
+            // Patch item prices
+            brInput.BaseStream.Seek(0xFC, SeekOrigin.Begin); int sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(0xA70, SeekOrigin.Begin); int eOffset = brInput.ReadInt32();
+            int count = (eOffset - sOffset) / 0x24;
+            Console.WriteLine($"Patching prices for {count} items starting at 0x{sOffset.ToString("X8")}");
+            for (int i = 0; i < count; i++)
+            {
+                brOutput.BaseStream.Seek(sOffset + (i * 0x24) + 12, SeekOrigin.Begin);
+                brInput.BaseStream.Seek(sOffset + (i * 0x24) + 12, SeekOrigin.Begin);
+                Int32 buyPrice = brInput.ReadInt32() / 10;
+                brOutput.Write(buyPrice);
+
+                brOutput.BaseStream.Seek(sOffset + (i * 0x24) + 16, SeekOrigin.Begin);
+                brInput.BaseStream.Seek(sOffset + (i * 0x24) + 16, SeekOrigin.Begin);
+                Int32 sellPrice = brInput.ReadInt32() * 5;
+                brOutput.Write(sellPrice);
+            }
+
+            // Patch equip prices
+            for (int i = 0; i < 5; i++)
+            {
+                brInput.BaseStream.Seek(dataPointersArmor[i].Key, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
+                brInput.BaseStream.Seek(dataPointersArmor[i].Value, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+                count = (eOffset - sOffset) / 0x48;
+                Console.WriteLine($"Patching prices for {count} armor pieces starting at 0x{sOffset.ToString("X8")}");
+                for (int j = 0; j < count; j++)
+                {
+                    brOutput.BaseStream.Seek(sOffset + (j * 0x48) + 12, SeekOrigin.Begin);
+                    brOutput.Write((Int32)50);
+                }
+            }
+
+            brOutput.Close();
+            brInput.Close();
+
             // Generate shop array
-            int count = 16700;
+            count = 16700;
             byte[] shopArray = new byte[(count * 8) + 5 * 32];
             int blockSize = (count / 5) * 8;
 
@@ -364,7 +403,7 @@ namespace FrontierDataTool
                 Array.Copy(item, 0, shopArray, i * 8, 8);
             }
 
-            // Append modshop data to file
+            // Append modshop data to file          
             byte[] inputArray = File.ReadAllBytes(file);
             byte[] outputArray = new byte[inputArray.Length + shopArray.Length];
             Array.Copy(inputArray, outputArray, inputArray.Length);

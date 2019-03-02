@@ -14,6 +14,7 @@ namespace ReFrontier
         static bool autoClose = false;
         static bool cleanUp = false;
         static bool compress = false;
+        static bool ignoreJPK = false;
 
         //[STAThread]
         static void Main(string[] args)
@@ -31,7 +32,8 @@ namespace ReFrontier
                     "-compress: Pack file with jpk type 0 compression\n" +
                     "-encrypt: Encrypt input file with ecd algorithm\n" +
                     "-close: Close window after finishing process\n" +
-                    "-cleanUp: Delete simple archives after unpacking", 
+                    "-cleanUp: Delete simple archives after unpacking\n" +
+                    "-ignoreJPK: Do not decompress JPK files", 
                     false);
                 Console.Read();
                 return;
@@ -45,6 +47,7 @@ namespace ReFrontier
             if (args.Any("-close)".Contains)) autoClose = true;
             if (args.Any("-cleanUp)".Contains)) cleanUp = true;
             if (args.Any("-compress)".Contains)) { compress = true; repack = false; }
+            if (args.Any("-ignoreJPK".Contains)) ignoreJPK = true;
 
             // Check file
             if (File.Exists(input) || Directory.Exists(input))
@@ -137,8 +140,7 @@ namespace ReFrontier
             else if (fileMagic == 0x1A524B4A)
             {
                 Console.WriteLine("JKR Header detected.");
-                Unpack.UnpackJPK(input);
-                Console.WriteLine("File decompressed.");
+                if (!ignoreJPK) { Unpack.UnpackJPK(input); Console.WriteLine("File decompressed."); }
             }
             // MHA Header
             else if (fileMagic == 0x0161686D)

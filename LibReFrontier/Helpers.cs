@@ -150,15 +150,13 @@ namespace LibReFrontier
 
             if (headerInt == 1)
             {
-                Console.WriteLine("Im a model");
-                header = new byte[8];
-                Array.Copy(data, header, 8);
-                long headerInt64 = BitConverter.ToInt64(header, 0);
-                if (headerInt64 == 17179869185) extension = "fmod";
+                header = new byte[12];
+                Array.Copy(data, header, 12);
+                headerInt = BitConverter.ToUInt32(header, 8);
+                if (headerInt == data.Length) extension = "fmod";
             }
             else if (headerInt == 0xC0000000)
             {
-                Console.WriteLine("Im a skel");
                 header = new byte[12];
                 Array.Copy(data, header, 12);
                 headerInt = BitConverter.ToUInt32(header, 8);
