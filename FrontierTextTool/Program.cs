@@ -27,6 +27,7 @@ namespace FrontierTextTool
             if (args[0] == "insert") InsertStrings(args[1], args[2]);
             if (args[0] == "merge") Merge(args[1], args[2]);
             if (args[0] == "cleanTrados") CleanTrados(args[1]);
+            if (args[0] == "insertCAT") InsertCatFile(args[1], args[2]);
             if (!autoClose) { Console.WriteLine("Done"); Console.Read(); }
         }
 
@@ -51,13 +52,76 @@ namespace FrontierTextTool
             FileUploadSFTP(File.ReadAllBytes("src\\MHFUP_00.DAT"), $"/var/www/html/mhfo/MHFUP_00.DAT");
         }
 
-        // Clean pollution caused by Trados
+        // Insert CAT file to csv
+        static void InsertCatFile(string catFile, string csvFile)
+        {
+            Console.WriteLine($"Processing {catFile}...");
+            CleanTrados(catFile);
+            string[] catStrings = File.ReadAllLines(catFile, Encoding.UTF8);
+
+            var stringDb = new List<StringDatabase>();
+            using (var reader = new StreamReader(csvFile, Encoding.GetEncoding("shift-jis")))
+            {
+                using (var csv = new CsvReader(reader))
+                {
+                    csv.Configuration.Delimiter = "\t";
+                    csv.Configuration.IgnoreQuotes = true;
+                    csv.Configuration.MissingFieldFound = null;
+                    csv.Read();
+                    csv.ReadHeader();
+                    while (csv.Read())
+                    {
+                        var record = new StringDatabase
+                        {
+                            Offset = csv.GetField<UInt32>("Offset"),
+                            Hash = csv.GetField<UInt32>("Hash"),
+                            eString = csv.GetField("eString"),
+                            jString = csv.GetField("jString")
+                        };
+                        stringDb.Add(record);
+                    }
+                }
+            }
+
+            // Copy catStrings to new db
+            for (int i = 0; i < stringDb.Count; i++)
+            {
+                Console.Write($"\rUpdating entry {i + 1}/{stringDb.Count}");
+                if (stringDb[i].jString != catStrings[i])
+                {
+                    stringDb[i].eString = catStrings[i];
+                }
+            }
+            Console.WriteLine();
+
+            // Using this approach because csvHelper would always escape some strings which might mess up in-game when copy-pasting where required
+            string fileName = "csv\\" + Path.GetFileName(csvFile);
+            //string fileName = "test.csv";
+            if (File.Exists(fileName)) File.Delete(fileName);
+            StreamWriter txtOutput = new StreamWriter(fileName, true, Encoding.GetEncoding("shift-jis"));
+            txtOutput.WriteLine("Offset\tHash\tjString\teString");
+            foreach (var obj in stringDb) txtOutput.WriteLine($"{obj.Offset}\t{obj.Hash}\t{obj.jString}\t{obj.eString}");
+            txtOutput.Close();
+
+            if (!Directory.Exists("backup")) Directory.CreateDirectory("backup");
+            File.Move(catFile, $"backup\\{Path.GetFileNameWithoutExtension(catFile)}_{DateTime.Now.ToString("yyyyMMdd_HHmm")}.txt");
+        }
+
+        // Clean pollution caused by Trados or other CAT
         static void CleanTrados(string file)
         {
             string text = File.ReadAllText(file, Encoding.UTF8);
+            text = text.Replace(": ~", ":~");
             text = text.Replace("。 ", "。");
             text = text.Replace("！ ", "！");
             text = text.Replace("？ ", "？");
+            text = text.Replace("： ", "：");
+            text = text.Replace("． ", "．");
+            text = text.Replace("． ", "．");
+            text = text.Replace("」 ", "」");
+            text = text.Replace("「 ", "「");
+            text = text.Replace("） ", "）");
+            text = text.Replace("（ ", "（");
             File.WriteAllText(file, text, Encoding.UTF8);
             Console.WriteLine("Cleaned up");
         }

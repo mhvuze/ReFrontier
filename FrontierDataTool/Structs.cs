@@ -8,6 +8,40 @@ namespace FrontierDataTool
 {
     public class Structs
     {
+        public class QuestData
+        {
+            public String title { get; set; }
+            public String textMain { get; set; }
+
+            public Byte unk1 { get; set; }
+            public Byte unk2 { get; set; }
+            public Byte unk3 { get; set; }
+            public Byte unk4 { get; set; }
+            public Byte level { get; set; }
+            public Byte unk5 { get; set; }
+            public Byte courseType { get; set; }    // 6 = Premium, 18 = Free?, 19 = HLC?, 20 = Extra
+            public Byte unk7 { get; set; }
+            public Byte unk8 { get; set; }
+            public Byte unk9 { get; set; }
+            public Byte unk10 { get; set; }
+            public Byte unk11 { get; set; }
+            public Int32 fee { get; set; }
+            public Int32 zennyMain { get; set; }
+            public Int32 zennyKo { get; set; }
+            public Int32 zennySubA { get; set; }
+            public Int32 zennySubB { get; set; }
+            public Int32 time { get; set; }
+            public Int32 unk12 { get; set; }
+            public Byte unk13 { get; set; }
+            public Byte unk14 { get; set; }
+            public Byte unk15 { get; set; }
+            public Byte unk16 { get; set; }
+            public Byte unk17 { get; set; }
+            public Byte unk18 { get; set; }
+            public Byte unk19 { get; set; }
+            public Byte unk20 { get; set; }
+        }
+
         public class ArmorDataEntry
         {
             public String equipClass { get; set; }

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace FrontierDataTool
 {
@@ -33,6 +34,25 @@ namespace FrontierDataTool
         static int soStringSkillPt = 0xA20;
         static int eoStringSkillPt = 0xA1C;
 
+        // --- mhfinf.pac ---
+        public static List<KeyValuePair<int, int>> offsetInfQuestData = new List<KeyValuePair<int, int>>()
+        {
+            new KeyValuePair<int, int>(0x6bd60, 95),
+            new KeyValuePair<int, int>(0x74100, 62),
+            new KeyValuePair<int, int>(0x797e0, 99),
+            new KeyValuePair<int, int>(0x821a0, 98),
+            new KeyValuePair<int, int>(0x8aa00, 99),
+            new KeyValuePair<int, int>(0x933c0, 99),
+            new KeyValuePair<int, int>(0x9bd80, 99),
+            new KeyValuePair<int, int>(0xa4740, 99),
+            new KeyValuePair<int, int>(0xad100, 99),
+            new KeyValuePair<int, int>(0xb5b40, 36),
+            new KeyValuePair<int, int>(0xb8e60, 96),
+            new KeyValuePair<int, int>(0xc1400, 91),
+
+            new KeyValuePair<int, int>(0x161220, 20), // Incorrect
+        };
+
         public static List<KeyValuePair<int, int>> dataPointersArmor = new List<KeyValuePair<int, int>>()
         {
             new KeyValuePair<int, int>(soHead, eoHead),
@@ -51,6 +71,14 @@ namespace FrontierDataTool
             new KeyValuePair<int, int>(soStringLeg, eoStringLeg)
         };
 
+        public class StringDatabase
+        {
+            public UInt32 Offset { get; set; }
+            public UInt32 Hash { get; set; }
+            public string jString { get; set; }
+            public string eString { get; set; }
+        }
+
         public static string[] elementIds = new string[] { "なし", "火", "水", "雷", "龍", "氷", "炎", "光", "雷極", "天翔", "熾凍", "黒焔", "奏", "闇", "紅魔", "風", "響", "灼零", "皇鳴" };
         public static string[] ailmentIds = new string[] { "なし", "毒", "麻痺", "睡眠", "爆破" };
         public static string[] wClassIds = new string[] { "大剣", "ヘビィボウガン", "ハンマー", "ランス", "片手剣", "ライトボウガン", "双剣", "太刀", "狩猟笛", "ガンランス", "弓", "穿龍棍", "スラッシュアックスＦ", "マグネットスパイク" };
@@ -61,13 +89,14 @@ namespace FrontierDataTool
         {
             if (args.Length < 2) { Console.WriteLine("Too few arguments."); return; }
 
-            if (args[0] == "dump") DumpData(args[1], args[2]);      // mhfpac.bin mhfdat.bin
-            if (args[0] == "modshop") ModShop(args[1]);             // mhfdat.bin
+            if (args[0] == "dump") DumpData(args[1], args[2], args[3]);         // mhfpac.bin, mhfdat.bin, mhfinf.bin
+            if (args[0] == "modshop") ModShop(args[1]);                         // mhfdat.bin
+            if (args[0] == "mhsxEng") MHSXEng(args[1], args[2]);                // mhfdat_01.csv, folder to MHSX2G dat folder
             Console.WriteLine("Done"); Console.Read();
         }
 
         // Dump weapon and armor data
-        static void DumpData(string mhfpac, string mhfdat)
+        static void DumpData(string mhfpac, string mhfdat, string mhfinf)
         {
             // Get skill name dictionary
             MemoryStream msInput = new MemoryStream(File.ReadAllBytes(mhfpac));
@@ -85,6 +114,7 @@ namespace FrontierDataTool
                 id++;
             }
 
+            #region EquipmentData
             // Dump equip data
             msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
             brInput = new BinaryReader(msInput);
@@ -198,7 +228,9 @@ namespace FrontierDataTool
                 writer.Configuration.Delimiter = "\t";
                 writer.WriteRecords(armorEntries);
             }
+            #endregion
 
+            #region WeaponData
             // Dump melee weapon data
             brInput.BaseStream.Seek(soMelee, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
             brInput.BaseStream.Seek(eoMelee, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
@@ -346,6 +378,69 @@ namespace FrontierDataTool
                 writer.Configuration.Delimiter = "\t";
                 writer.WriteRecords(rangedEntries);
             }
+            #endregion
+
+            // Dump inf quest data
+            msInput = new MemoryStream(File.ReadAllBytes(mhfinf));
+            brInput = new BinaryReader(msInput);
+
+            totalCount = 0;
+            for (int j = 0; j < offsetInfQuestData.Count; j++) totalCount += offsetInfQuestData[j].Value;
+            Structs.QuestData[] quests = new Structs.QuestData[totalCount];
+
+            currentCount = 0;
+            for (int j = 0; j < offsetInfQuestData.Count; j++)
+            {
+                brInput.BaseStream.Seek(offsetInfQuestData[j].Key, SeekOrigin.Begin);                
+                for (int i = 0; i < offsetInfQuestData[j].Value; i++)
+                {
+                    Structs.QuestData entry = new Structs.QuestData();
+                    entry.unk1 = brInput.ReadByte();
+                    entry.unk2 = brInput.ReadByte();
+                    entry.unk3 = brInput.ReadByte();
+                    entry.unk4 = brInput.ReadByte();
+                    entry.level = brInput.ReadByte();
+                    entry.unk5 = brInput.ReadByte();
+                    entry.courseType = brInput.ReadByte();
+                    entry.unk7 = brInput.ReadByte();
+                    entry.unk8 = brInput.ReadByte();
+                    entry.unk9 = brInput.ReadByte();
+                    entry.unk10 = brInput.ReadByte();
+                    entry.unk11 = brInput.ReadByte();
+                    entry.fee = brInput.ReadInt32();
+                    entry.zennyMain = brInput.ReadInt32();
+                    entry.zennyKo = brInput.ReadInt32();
+                    entry.zennySubA = brInput.ReadInt32();
+                    entry.zennySubB = brInput.ReadInt32();
+                    entry.time = brInput.ReadInt32();
+                    entry.unk12 = brInput.ReadInt32();
+                    entry.unk13 = brInput.ReadByte();
+                    entry.unk14 = brInput.ReadByte();
+                    entry.unk15 = brInput.ReadByte();
+                    entry.unk16 = brInput.ReadByte();
+                    entry.unk17 = brInput.ReadByte();
+                    entry.unk18 = brInput.ReadByte();
+                    entry.unk19 = brInput.ReadByte();
+                    entry.unk20 = brInput.ReadByte();
+
+                    brInput.BaseStream.Seek(0x110, SeekOrigin.Current);
+                    entry.title = StringFromPointer(brInput);
+                    entry.textMain = StringFromPointer(brInput);
+                    brInput.BaseStream.Seek(0x18, SeekOrigin.Current);
+                    Console.WriteLine(brInput.BaseStream.Position.ToString("X8"));
+
+                    quests[currentCount + i] = entry;
+                }
+                currentCount += offsetInfQuestData[j].Value;
+            }
+
+            // Write csv
+            using (var textWriter = new StreamWriter("InfQuests.csv", false, Encoding.GetEncoding("shift-jis")))
+            {
+                var writer = new CsvWriter(textWriter);
+                writer.Configuration.Delimiter = "\t";
+                writer.WriteRecords(quests);
+            }
         }
 
         // Add all-items shop to file, change item prices, change armor prices
@@ -432,12 +527,116 @@ namespace FrontierDataTool
             else Console.WriteLine("Could not find needle, please check manually and correct code.");
         }
 
+        // Update MHSX2G dat files to english based on latest patch strings
+        static void MHSXEng(string patchfolder, string datfolder)
+        {
+            if (!Directory.Exists(datfolder)) { Console.WriteLine("Specified MHSX2G dat folder is invalid."); return; }
+            if (!Directory.Exists(patchfolder)) { Console.WriteLine("Specified patch data folder is invalid."); return; }
+
+            // Read strings from mhfdat
+            var stringDb = new List<StringDatabase>();
+            using (var reader = new StreamReader($"{patchfolder}\\mhfpac_01.csv", Encoding.GetEncoding("shift-jis")))
+            {
+                using (var csv = new CsvReader(reader))
+                {
+                    csv.Configuration.Delimiter = "\t";
+                    csv.Configuration.IgnoreQuotes = true;
+                    csv.Configuration.MissingFieldFound = null;
+                    csv.Read();
+                    csv.ReadHeader();
+                    while (csv.Read())
+                    {
+                        var record = new StringDatabase
+                        {
+                            jString = csv.GetField("jString"),
+                            eString = csv.GetField("eString")
+                        };
+                        stringDb.Add(record);
+                    }
+                }
+            }
+
+            using (var reader = new StreamReader($"{patchfolder}\\mhfdat_01.csv", Encoding.GetEncoding("shift-jis")))
+            {
+                using (var csv = new CsvReader(reader))
+                {
+                    csv.Configuration.Delimiter = "\t";
+                    csv.Configuration.IgnoreQuotes = true;
+                    csv.Configuration.MissingFieldFound = null;
+                    csv.Read();
+                    csv.ReadHeader();
+                    while (csv.Read())
+                    {
+                        var record = new StringDatabase
+                        {
+                            jString = csv.GetField("jString"),
+                            eString = csv.GetField("eString")
+                        };
+                        stringDb.Add(record);
+                    }
+                }
+            }
+
+            // Read each MHSX2G dat
+            string[] inputFiles = Directory.GetFiles(datfolder, "*.xml", SearchOption.AllDirectories);
+            //foreach (string inputFile in inputFiles)
+            XmlDocument doc = new XmlDocument();
+            doc.Load(@"C:\Users\corne\Documents\Monster Hunter Frontier\MHSX2G\dat\EquipArm.xml");
+            XmlNodeList nodes = doc.SelectNodes("//*");
+
+            decimal n;
+            foreach (XmlNode node in nodes)
+            {
+                // Update attributes
+                XmlAttributeCollection attributes = node.Attributes;
+                if (attributes != null)
+                {
+                    foreach (XmlAttribute attribute in attributes)
+                    {
+                        // Skip processing if number                        
+                        if (!decimal.TryParse(attribute.Value, out n) && attribute.Name.Contains("Name"))
+                        {
+                            for (int i = 0; i < stringDb.Count; i++)
+                            {
+                                if (stringDb[i].jString == attribute.Value)
+                                {
+                                    attribute.Value = stringDb[i].eString;                                    
+                                    Console.WriteLine(stringDb[i].eString);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Update node values
+                if (!decimal.TryParse(node.Value, out n) && (node.Name.Contains("Item") &&
+                    node.Name.Contains("Skill") &&
+                    node.Name.Contains("Ability")))
+                {
+                    for (int i = 0; i < stringDb.Count; i++)
+                    {
+                        if (stringDb[i].jString == node.Value)
+                        {
+                            node.Value = stringDb[i].eString;
+                            Console.WriteLine(stringDb[i].eString);
+                            break;
+                        }
+                    }
+                }
+
+            }
+
+            //myNode.Value = "blabla";
+            doc.Save(@"C:\Users\corne\Documents\Monster Hunter Frontier\MHSX2G\dat\SkillBase2.xml");
+        }
+
         static string StringFromPointer(BinaryReader brInput)
         {
             int off = brInput.ReadInt32();
             long pos = brInput.BaseStream.Position;
             brInput.BaseStream.Seek(off, SeekOrigin.Begin);
-            string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis"));
+            string str = Helpers.ReadNullterminatedString(brInput, Encoding.GetEncoding("shift-jis")).Replace("\n", "<NL>");
             brInput.BaseStream.Seek(pos, SeekOrigin.Begin);
             return str;
         }
