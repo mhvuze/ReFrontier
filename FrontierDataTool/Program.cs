@@ -4,10 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
+using System.Net;
 
 namespace FrontierDataTool
 {
@@ -20,6 +18,8 @@ namespace FrontierDataTool
         static int eoStringHead = 0x60; static int eoStringBody = 0x64; static int eoStringArm = 0x68; static int eoStringWaist = 0x6C; static int eoStringLeg = 0x70;
         static int soStringRanged = 0x84; static int soStringMelee = 0x88;
         static int eoStringRanged = 0x88; static int eoStringMelee = 0x174;
+        static int soStringItem = 0x100; static int soStringItemDesc = 0x12C;
+        static int eoStringItem = 0xFC; static int eoStringItemDesc = 0x100;
 
         // Armor
         static int soHead = 0x50; static int soBody = 0x54; static int soArm = 0x58; static int soWaist = 0x5C; static int soLeg = 0x60;
@@ -29,10 +29,11 @@ namespace FrontierDataTool
         static int soRanged = 0x80; static int soMelee = 0x7C;
         static int eoRanged = 0x7C; static int eoMelee = 0x90;
 
+
         // --- mhfpac.bin ---
         // Strings
-        static int soStringSkillPt = 0xA20;
-        static int eoStringSkillPt = 0xA1C;
+        static int soStringSkillPt = 0xA20; static int soStringSkillActivate = 0xA1C; static int soStringZSkill = 0xFBC;
+        static int eoStringSkillPt = 0xA1C; static int eoStringSkillActivate = 0xBC0; static int eoStringZSkill = 0xFB0;
 
         // --- mhfinf.pac ---
         public static List<KeyValuePair<int, int>> offsetInfQuestData = new List<KeyValuePair<int, int>>()
@@ -89,16 +90,17 @@ namespace FrontierDataTool
         {
             if (args.Length < 2) { Console.WriteLine("Too few arguments."); return; }
 
-            if (args[0] == "dump") DumpData(args[1], args[2], args[3]);         // mhfpac.bin, mhfdat.bin, mhfinf.bin
-            if (args[0] == "modshop") ModShop(args[1]);                         // mhfdat.bin
-            if (args[0] == "mhsxEng") MHSXEng(args[1], args[2]);                // mhfdat_01.csv, folder to MHSX2G dat folder
+            if (args[0] == "dump") DumpData(args[1], args[2], args[3], args[4]);         // suffix, mhfpac.bin, mhfdat.bin, mhfinf.bin
+            if (args[0] == "modshop") ModShop(args[1]);                                 // mhfdat.bin
             Console.WriteLine("Done"); Console.Read();
         }
 
-        // Dump weapon and armor data
-        static void DumpData(string mhfpac, string mhfdat, string mhfinf)
+        // Dump data and strings
+        static void DumpData(string suffix, string mhfpac, string mhfdat, string mhfinf)
         {
-            // Get skill name dictionary
+            #region SkillSystem
+            // Get and dump skill system dictionary
+            Console.WriteLine("Dumping skill tree names.");
             MemoryStream msInput = new MemoryStream(File.ReadAllBytes(mhfpac));
             BinaryReader brInput = new BinaryReader(msInput);
             brInput.BaseStream.Seek(soStringSkillPt, SeekOrigin.Begin); int sOffset = brInput.ReadInt32();
@@ -114,11 +116,89 @@ namespace FrontierDataTool
                 id++;
             }
 
-            #region EquipmentData
-            // Dump equip data
-            msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
-            brInput = new BinaryReader(msInput);
+            string textName = $"mhsx_SkillSys_{suffix}.txt";
+            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+                foreach (KeyValuePair<int, string> entry in skillId)
+                    file.WriteLine("{0}", entry.Value);
+            FileUploadFTP(textName, $"/www/MHFO/{textName}");
+            #endregion
 
+            #region ActiveSkill
+            Console.WriteLine("Dumping active skill names.");
+            brInput.BaseStream.Seek(soStringSkillActivate, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoStringSkillActivate, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
+            List<string> activeSkill = new List<string>();
+            while (brInput.BaseStream.Position < eOffset)
+            {
+                string name = StringFromPointer(brInput);
+                activeSkill.Add(name);
+            }
+
+            textName = $"mhsx_SkillActivate_{suffix}.txt";
+            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+                foreach (string entry in activeSkill)
+                    file.WriteLine("{0}", entry);
+            FileUploadFTP(textName, $"/www/MHFO/{textName}");
+            #endregion
+
+            #region ZSkill
+            Console.WriteLine("Dumping Z skill names.");
+            brInput.BaseStream.Seek(soStringZSkill, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoStringZSkill, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
+            List<string> zSkill = new List<string>();
+            while (brInput.BaseStream.Position < eOffset)
+            {
+                string name = StringFromPointer(brInput);
+                zSkill.Add(name);
+            }
+
+            textName = $"mhsx_SkillZ_{suffix}.txt";
+            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+                foreach (string entry in zSkill)
+                    file.WriteLine("{0}", entry);
+            FileUploadFTP(textName, $"/www/MHFO/{textName}");
+            #endregion
+
+            #region Items
+            Console.WriteLine("Dumping item names.");
+            msInput = new MemoryStream(File.ReadAllBytes(mhfdat));
+            brInput = new BinaryReader(msInput);            
+            brInput.BaseStream.Seek(soStringItem, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoStringItem, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
+            List<string> items = new List<string>();
+            while (brInput.BaseStream.Position < eOffset)
+            {
+                string name = StringFromPointer(brInput);
+                items.Add(name);
+            }
+
+            textName = $"mhsx_Items_{suffix}.txt";
+            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+                foreach (string entry in items)
+                    file.WriteLine("{0}", entry);
+            FileUploadFTP(textName, $"/www/MHFO/{textName}");
+
+            Console.WriteLine("Dumping item descriptions.");
+            brInput.BaseStream.Seek(soStringItemDesc, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoStringItemDesc, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
+            List<string> itemsDesc = new List<string>();
+            while (brInput.BaseStream.Position < eOffset)
+            {
+                string name = StringFromPointer(brInput);
+                itemsDesc.Add(name);
+            }
+
+            textName = $"Items_Desc_{suffix}.txt";
+            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+                foreach (string entry in itemsDesc)
+                    file.WriteLine("{0}", entry);
+            #endregion
+
+            #region EquipmentData
             // Dump armor data
             int totalCount = 0;
             for (int i = 0; i < 5; i++)
@@ -228,6 +308,13 @@ namespace FrontierDataTool
                 writer.Configuration.Delimiter = "\t";
                 writer.WriteRecords(armorEntries);
             }
+
+            // Write armor txt
+            textName = $"mhsx_Armor_{suffix}.txt";
+            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+                foreach (var entry in armorEntries)
+                    file.WriteLine("{0}", entry.name);
+            FileUploadFTP(textName, $"/www/MHFO/{textName}");
             #endregion
 
             #region WeaponData
@@ -380,6 +467,7 @@ namespace FrontierDataTool
             }
             #endregion
 
+            #region QuestData
             // Dump inf quest data
             msInput = new MemoryStream(File.ReadAllBytes(mhfinf));
             brInput = new BinaryReader(msInput);
@@ -441,6 +529,7 @@ namespace FrontierDataTool
                 writer.Configuration.Delimiter = "\t";
                 writer.WriteRecords(quests);
             }
+            #endregion
         }
 
         // Add all-items shop to file, change item prices, change armor prices
@@ -515,120 +604,28 @@ namespace FrontierDataTool
                 int offsetPointer = Helpers.GetOffsetOfArray(outputArray, offsetArray);
                 if (offsetPointer != -1)
                 {
-                    Console.WriteLine($"Found pointer at 0x{offsetPointer.ToString("X8")}.");
+                    Console.WriteLine($"Found shop pointer at 0x{offsetPointer.ToString("X8")}.");
                     byte[] patchedPointer = BitConverter.GetBytes(inputArray.Length);
                     patchedPointer.Reverse();
-                    Array.Copy(patchedPointer, 0, outputArray, offsetPointer, patchedPointer.Length);
-
-                    File.WriteAllBytes(file, outputArray);
+                    Array.Copy(patchedPointer, 0, outputArray, offsetPointer, patchedPointer.Length);                    
                 }
-                else Console.WriteLine("Could not find pointer, please check manually and correct code.");
+                else Console.WriteLine("Could not find shop pointer, please check manually and correct code.");
             }
-            else Console.WriteLine("Could not find needle, please check manually and correct code.");
-        }
+            else Console.WriteLine("Could not find shop needle, please check manually and correct code.");
 
-        // Update MHSX2G dat files to english based on latest patch strings
-        static void MHSXEng(string patchfolder, string datfolder)
-        {
-            if (!Directory.Exists(datfolder)) { Console.WriteLine("Specified MHSX2G dat folder is invalid."); return; }
-            if (!Directory.Exists(patchfolder)) { Console.WriteLine("Specified patch data folder is invalid."); return; }
-
-            // Read strings from mhfdat
-            var stringDb = new List<StringDatabase>();
-            using (var reader = new StreamReader($"{patchfolder}\\mhfpac_01.csv", Encoding.GetEncoding("shift-jis")))
+            // Find and modify Hunter Pearl Skill unlocks
+            needle = new byte[] { 01, 00, 01, 00, 00, 00, 00, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00, 0x25, 00 };
+            offsetData = Helpers.GetOffsetOfArray(outputArray, needle);
+            if (offsetData != -1)
             {
-                using (var csv = new CsvReader(reader))
-                {
-                    csv.Configuration.Delimiter = "\t";
-                    csv.Configuration.IgnoreQuotes = true;
-                    csv.Configuration.MissingFieldFound = null;
-                    csv.Read();
-                    csv.ReadHeader();
-                    while (csv.Read())
-                    {
-                        var record = new StringDatabase
-                        {
-                            jString = csv.GetField("jString"),
-                            eString = csv.GetField("eString")
-                        };
-                        stringDb.Add(record);
-                    }
-                }
+                Console.WriteLine($"Found hunter pearl skill data to modify at 0x{offsetData.ToString("X8")}.");
+                byte[] pearlPatch = new byte[] { 02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00, 02, 00 };
+                for (int i = 0; i < 108; i++) Array.Copy(pearlPatch, 0, outputArray, offsetData + (i * 0x30) + 8, pearlPatch.Length);                
             }
+            else Console.WriteLine("Could not find pearl skill needle, please check manually and correct code.");
 
-            using (var reader = new StreamReader($"{patchfolder}\\mhfdat_01.csv", Encoding.GetEncoding("shift-jis")))
-            {
-                using (var csv = new CsvReader(reader))
-                {
-                    csv.Configuration.Delimiter = "\t";
-                    csv.Configuration.IgnoreQuotes = true;
-                    csv.Configuration.MissingFieldFound = null;
-                    csv.Read();
-                    csv.ReadHeader();
-                    while (csv.Read())
-                    {
-                        var record = new StringDatabase
-                        {
-                            jString = csv.GetField("jString"),
-                            eString = csv.GetField("eString")
-                        };
-                        stringDb.Add(record);
-                    }
-                }
-            }
-
-            // Read each MHSX2G dat
-            string[] inputFiles = Directory.GetFiles(datfolder, "*.xml", SearchOption.AllDirectories);
-            //foreach (string inputFile in inputFiles)
-            XmlDocument doc = new XmlDocument();
-            doc.Load(@"C:\Users\corne\Documents\Monster Hunter Frontier\MHSX2G\dat\EquipArm.xml");
-            XmlNodeList nodes = doc.SelectNodes("//*");
-
-            decimal n;
-            foreach (XmlNode node in nodes)
-            {
-                // Update attributes
-                XmlAttributeCollection attributes = node.Attributes;
-                if (attributes != null)
-                {
-                    foreach (XmlAttribute attribute in attributes)
-                    {
-                        // Skip processing if number                        
-                        if (!decimal.TryParse(attribute.Value, out n) && attribute.Name.Contains("Name"))
-                        {
-                            for (int i = 0; i < stringDb.Count; i++)
-                            {
-                                if (stringDb[i].jString == attribute.Value)
-                                {
-                                    attribute.Value = stringDb[i].eString;                                    
-                                    Console.WriteLine(stringDb[i].eString);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Update node values
-                if (!decimal.TryParse(node.Value, out n) && (node.Name.Contains("Item") &&
-                    node.Name.Contains("Skill") &&
-                    node.Name.Contains("Ability")))
-                {
-                    for (int i = 0; i < stringDb.Count; i++)
-                    {
-                        if (stringDb[i].jString == node.Value)
-                        {
-                            node.Value = stringDb[i].eString;
-                            Console.WriteLine(stringDb[i].eString);
-                            break;
-                        }
-                    }
-                }
-
-            }
-
-            //myNode.Value = "blabla";
-            doc.Save(@"C:\Users\corne\Documents\Monster Hunter Frontier\MHSX2G\dat\SkillBase2.xml");
+            // Write to file
+            File.WriteAllBytes(file, outputArray);
         }
 
         static string StringFromPointer(BinaryReader brInput)
@@ -655,6 +652,16 @@ namespace FrontierDataTool
             else if (id < 10000) str = $"wg{(id - 9000).ToString("D3")}";
             else str = "Unmapped";
             return str;
+        }
+
+        // Upload to ftp
+        public static void FileUploadFTP(string file, string path)
+        {
+            using (WebClient client = new WebClient())
+            {
+                client.Credentials = new NetworkCredential("vuvu", "alphaabetab");
+                client.UploadFile($"ftp://vuvu.bplaced.net/{path}", WebRequestMethods.Ftp.UploadFile, file);
+            }
         }
     }
 }

@@ -87,10 +87,9 @@ namespace FrontierTextTool
             for (int i = 0; i < stringDb.Count; i++)
             {
                 Console.Write($"\rUpdating entry {i + 1}/{stringDb.Count}");
-                if (stringDb[i].jString != catStrings[i])
-                {
-                    stringDb[i].eString = catStrings[i];
-                }
+                if (stringDb[i].jString != catStrings[i]) stringDb[i].eString = catStrings[i];
+                // Allow for deletions
+                else if (stringDb[i].jString == catStrings[i] && stringDb[i].eString != "") stringDb[i].eString = "";
             }
             Console.WriteLine();
 
