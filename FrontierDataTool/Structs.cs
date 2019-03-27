@@ -40,6 +40,29 @@ namespace FrontierDataTool
             public Byte unk18 { get; set; }
             public Byte unk19 { get; set; }
             public Byte unk20 { get; set; }
+            public String mainGoalType { get; set; }
+            public Int16 mainGoalTarget { get; set; }
+            public Int16 mainGoalCount { get; set; }
+            public String subAGoalType { get; set; }
+            public Int16 subAGoalTarget { get; set; }
+            public Int16 subAGoalCount { get; set; }
+            public String subBGoalType { get; set; }
+            public Int16 subBGoalTarget { get; set; }
+            public Int16 subBGoalCount { get; set; }
+
+            public Int32 grp { get; set; }
+        }
+
+        public enum QuestTypes
+        {
+            None = 0,
+            Hunt = 0x00000001,
+            Capture = 0x00000101,
+            Kill = 0x00000201,
+            Delivery = 0x00000002,
+            GuildFlag = 0x00001002,
+            Damging = 0x00008004
+
         }
 
         public class ArmorDataEntry
