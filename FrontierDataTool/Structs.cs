@@ -12,6 +12,8 @@ namespace FrontierDataTool
         {
             public String title { get; set; }
             public String textMain { get; set; }
+            public String textSubA { get; set; }
+            public String textSubB { get; set; }
 
             public Byte unk1 { get; set; }
             public Byte unk2 { get; set; }
@@ -50,7 +52,9 @@ namespace FrontierDataTool
             public Int16 subBGoalTarget { get; set; }
             public Int16 subBGoalCount { get; set; }
 
-            public Int32 grp { get; set; }
+            public Int32 mainGRP { get; set; }
+            public Int32 subAGRP { get; set; }
+            public Int32 subBGRP { get; set; }
         }
 
         public enum QuestTypes

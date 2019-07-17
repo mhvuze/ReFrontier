@@ -32,8 +32,8 @@ namespace FrontierDataTool
 
         // --- mhfpac.bin ---
         // Strings
-        static int soStringSkillPt = 0xA20; static int soStringSkillActivate = 0xA1C; static int soStringZSkill = 0xFBC;
-        static int eoStringSkillPt = 0xA1C; static int eoStringSkillActivate = 0xBC0; static int eoStringZSkill = 0xFB0;
+        static int soStringSkillPt = 0xA20; static int soStringSkillActivate = 0xA1C; static int soStringZSkill = 0xFBC; static int soStringSkillDesc = 0xb8;
+        static int eoStringSkillPt = 0xA1C; static int eoStringSkillActivate = 0xBC0; static int eoStringZSkill = 0xFB0; static int eoStringSkillDesc = 0xc0;
 
         // --- mhfinf.pac ---
         public static List<KeyValuePair<int, int>> offsetInfQuestData = new List<KeyValuePair<int, int>>()
@@ -140,6 +140,25 @@ namespace FrontierDataTool
                 foreach (string entry in activeSkill)
                     file.WriteLine("{0}", entry);
             FileUploadFTP(textName, $"/www/MHFO/{textName}");
+            #endregion
+
+            #region SkillDescription
+            Console.WriteLine("Dumping active skill descriptions.");
+            brInput.BaseStream.Seek(soStringSkillDesc, SeekOrigin.Begin); sOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(eoStringSkillDesc, SeekOrigin.Begin); eOffset = brInput.ReadInt32();
+            brInput.BaseStream.Seek(sOffset, SeekOrigin.Begin);
+            List<string> skillDesc = new List<string>();
+            while (brInput.BaseStream.Position < eOffset)
+            {
+                string name = StringFromPointer(brInput);
+                skillDesc.Add(name);
+            }
+
+            textName = $"mhsx_SkillDesc_{suffix}.txt";
+            using (StreamWriter file = new StreamWriter(textName, false, Encoding.UTF8))
+                foreach (string entry in skillDesc)
+                    file.WriteLine("{0}", entry);
+            //FileUploadFTP(textName, $"/www/MHFO/{textName}");
             #endregion
 
             #region ZSkill
@@ -521,12 +540,16 @@ namespace FrontierDataTool
                     entry.subBGoalCount = brInput.ReadInt16();
 
                     brInput.BaseStream.Seek(0x5C, SeekOrigin.Current);
-                    entry.grp = brInput.ReadInt32();
+                    entry.mainGRP = brInput.ReadInt32();
+                    entry.subAGRP = brInput.ReadInt32();
+                    entry.subBGRP = brInput.ReadInt32();
 
-                    brInput.BaseStream.Seek(0x98, SeekOrigin.Current);
+                    brInput.BaseStream.Seek(0x90, SeekOrigin.Current);
                     entry.title = StringFromPointer(brInput);
                     entry.textMain = StringFromPointer(brInput);
-                    brInput.BaseStream.Seek(0x18, SeekOrigin.Current);
+                    entry.textSubA = StringFromPointer(brInput);
+                    entry.textSubB = StringFromPointer(brInput);
+                    brInput.BaseStream.Seek(0x10, SeekOrigin.Current);
                     Console.WriteLine(brInput.BaseStream.Position.ToString("X8"));
 
                     quests[currentCount + i] = entry;
@@ -671,8 +694,8 @@ namespace FrontierDataTool
         {
             using (WebClient client = new WebClient())
             {
-                client.Credentials = new NetworkCredential("vuvu", "alphaabetab");
-                client.UploadFile($"ftp://vuvu.bplaced.net/{path}", WebRequestMethods.Ftp.UploadFile, file);
+                client.Credentials = new NetworkCredential("placeholder", "yetanotherplaceholder");
+                client.UploadFile($"ftp://your.place.net/{path}", WebRequestMethods.Ftp.UploadFile, file);
             }
         }
     }
