@@ -23,6 +23,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -51,6 +52,9 @@
     <Compile Include="jpk\JPKDecodeHFIRW.cs" />
     <Compile Include="jpk\JPKDecodeLz.cs" />
     <Compile Include="jpk\JPKDecodeRW.cs" />
+    <Compile Include="jpk\JPKEncodeHFI.cs" />
+    <Compile Include="jpk\JPKEncodeHFIRW.cs" />
+    <Compile Include="jpk\JPKEncodeLz.cs" />
     <Compile Include="jpk\JPKEncodeRW.cs" />
     <Compile Include="Pack.cs" />
     <Compile Include="Unpack.cs" />

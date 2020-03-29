@@ -73,11 +73,9 @@ namespace ReFrontier
             if (File.Exists(otPath)) File.Delete(otPath);
             FileStream fsot = File.Create(otPath);
             BinaryWriter br = new BinaryWriter(fsot);
-            UInt32 u32;
-            UInt16 u16;
-            u32 = 0x1A524B4A;
+            UInt32 u32 = 0x1A524B4A;
+            UInt16 u16 = 0x108;
             br.Write(u32);
-            u16 = 0x108; // see it in all files
             br.Write(u16);
             br.Write(type);
             u32 = 0x10;
@@ -93,10 +91,10 @@ namespace ReFrontier
                     //encoder = new JPKEncodeHFIRW();
                     break;
                 case 3:
-                    //encoder = new JPKEncodeLz();
+                    encoder = new JPKEncodeLz();
                     break;
                 case 4:
-                    //encoder = new JPKEncodeHFI();
+                    encoder = new JPKEncodeHFI();
                     break;
             }
 
@@ -106,11 +104,12 @@ namespace ReFrontier
                 sta = DateTime.Now;
                 encoder.ProcessOnEncode(buffer, fsot, level, null);
                 fin = DateTime.Now;
-                //Console.WriteLine("\r\nResult length " + fsot.Length + " bytes. Elapsed time " + (fin - sta).ToString("%m\\:ss\\.ff"));
+                Helpers.Print($"File compressed using type {type} (level {level / 100}): {fsot.Length} bytes ({1 - (decimal)fsot.Length / insize:P} saved) in {(fin - sta).ToString("%m\\:ss\\.ff")}", false);
+                fsot.Close();
             }
             else
             {
-                Console.WriteLine("Invalid type: " + type);
+                Console.WriteLine("Unsupported/invalid type: " + type);
                 fsot.Close();
                 File.Delete(otPath);
             }

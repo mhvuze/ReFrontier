@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using LibReFrontier;
 
 namespace ReFrontier
@@ -8,6 +9,7 @@ namespace ReFrontier
     class Program
     {
         static bool createLog = false;
+        static bool recursive = true;
         static bool repack = false;
         static bool decryptOnly = false;
         static bool encrypt = false;
@@ -27,9 +29,10 @@ namespace ReFrontier
                 Helpers.Print("Usage: ReFrontier <file> (options)\n" +
                     "Options:\n" +
                     "-log: Write log file (required for repacking)\n" +
+                    "-nonRecursive: Do not unpack recursively\n" +
                     "-pack: Repack directory (requires log file)\n" +
                     "-decryptOnly: Decrypt ecd files without unpacking\n" +
-                    "-compress: Pack file with jpk type 0 compression\n" +
+                    "-compress [type],[level]: Pack file with jpk [type] at compression [level]\n" +
                     "-encrypt: Encrypt input file with ecd algorithm\n" +
                     "-close: Close window after finishing process\n" +
                     "-cleanUp: Delete simple archives after unpacking\n" +
@@ -41,6 +44,7 @@ namespace ReFrontier
 
             string input = args[0];
             if (args.Any("-log".Contains)) createLog = true;
+            if (args.Any("-nonRecursive".Contains)) recursive = false;
             if (args.Any("-pack".Contains)) repack = true;
             if (args.Any("-decryptOnly".Contains)) { decryptOnly = true; repack = false; }
             if (args.Any("-encrypt".Contains)) { encrypt = true; repack = false; }
@@ -74,7 +78,21 @@ namespace ReFrontier
                         ProcessMultipleLevels(inputFiles);
                     }
                     else if (repack) Console.WriteLine("A single file was specified while in repacking mode. Stopping.");
-                    else if (compress) { Pack.JPKEncode(0, input, $"output\\{Path.GetFileName(input)}", 6); Helpers.Print("File compressed.", false); }
+                    else if (compress) 
+                    {
+                        string pattern = @"-compress (\d+),(\d+)";
+                        try
+                        {
+                            Match match = Regex.Matches(string.Join(" ", args, 1, args.Length - 1), pattern)[0];
+                            ushort type = ushort.Parse(match.Groups[1].Value);
+                            int level = int.Parse(match.Groups[2].Value) * 100;
+                            Pack.JPKEncode(type, input, $"output\\{Path.GetFileName(input)}", level);
+                        }
+                        catch
+                        {
+                            Console.WriteLine("ERROR: Check compress input. Example: -compress 3,50");
+                        }
+                    }
                     else if (encrypt)
                     {
                         byte[] buffer = File.ReadAllBytes(input);
@@ -178,7 +196,7 @@ namespace ReFrontier
                 string[] patterns = { "*.bin", "*.jkr", "*.ftxt", "*.snd" };
                 string directory = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(inputFile)}";
 
-                if (Directory.Exists(directory))
+                if (Directory.Exists(directory) && recursive)
                 {
                     //Process All Successive Levels
                     ProcessMultipleLevels(Helpers.MyDirectory.GetFiles(directory, patterns, SearchOption.TopDirectoryOnly));
