@@ -8,24 +8,62 @@ namespace ReFrontier
 {
     class Unpack
     {
-        public static void UnpackSimpleArchive(string input, BinaryReader brInput, int magicSize, bool createLog, bool cleanUp)
+        public static void UnpackSimpleArchive(string input, BinaryReader brInput, int magicSize, bool createLog, bool cleanUp, bool autoStage)
         {
             FileInfo fileInfo = new FileInfo(input);
             string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
+
+            // Abort if too small
+            if (fileInfo.Length < 12)
+            {
+                Console.WriteLine("File is too small. Skipping.");
+                return;
+            }
 
             uint count = brInput.ReadUInt32();
 
             // Calculate complete size of extracted data to avoid extracting plausible files that aren't archives
             int completeSize = magicSize;
-            for (int i = 0; i < count; i++)
+            try
             {
-                brInput.BaseStream.Seek(magicSize, SeekOrigin.Current);
-                int entrySize = brInput.ReadInt32();
-                completeSize += entrySize;
+                for (int i = 0; i < count; i++)
+                {
+                    brInput.BaseStream.Seek(magicSize, SeekOrigin.Current);
+                    int entrySize = brInput.ReadInt32();
+                    completeSize += entrySize;
+                }
             }
+            catch
+            {
+                Console.WriteLine("Caught file-based error during simple container check.");
+            }
+
+            // Very fragile check for stage container
+            brInput.BaseStream.Seek(4, SeekOrigin.Begin);
+            int checkUnk = brInput.ReadInt32();
+            long checkZero = brInput.ReadInt64();
+            if (checkUnk < 9999 && checkZero == 0)
+            {
+                if (autoStage == true)
+                {
+                    brInput.BaseStream.Seek(0, SeekOrigin.Begin);
+                    UnpackStageContainer(input, brInput, createLog, cleanUp);
+                }
+                else
+                {
+                    Console.WriteLine($"Skipping. Not a valid simple container, but could be stage-specific. Try:\nReFrontier.exe {fileInfo.FullName} -stageContainer");
+                }
+                return;
+            }
+
+            if (completeSize > fileInfo.Length || count == 0 || count > 9999)
+            {
+                Console.WriteLine("Skipping. Not a valid simple container.");
+                return;
+            }
+
+            Console.WriteLine("Trying to unpack as generic simple container.");
             brInput.BaseStream.Seek(magicSize, SeekOrigin.Begin);
-            
-            if (completeSize > fileInfo.Length || count == 0 || count > 9999) { Console.WriteLine("Impossible container. Skipping."); return; }
 
             // Write to log file if desired; needs some other solution because it creates useless logs even if !createLog
             Directory.CreateDirectory(outputDir);
@@ -163,6 +201,97 @@ namespace ReFrontier
             }
             br.Close();
             ms.Close();
+        }
+
+        public static void UnpackStageContainer(string input, BinaryReader brInput, bool createLog, bool cleanUp)
+        {
+            Console.WriteLine("Trying to unpack as stage-specific container.");
+
+            FileInfo fileInfo = new FileInfo(input);
+            string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
+            Directory.CreateDirectory(outputDir);
+
+            StreamWriter logOutput = new StreamWriter($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            if (createLog) { logOutput.WriteLine("StageContainer"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('\\') + 1)); }
+
+            // First three segments
+            for (int i = 0; i < 3; i ++)
+            {
+                int offset = brInput.ReadInt32();
+                int size = brInput.ReadInt32();
+
+                if (size == 0)
+                {
+                    Console.WriteLine($"Offset: 0x{offset.ToString("X8")}, Size: 0x{size.ToString("X8")} (SKIPPED)");
+                    if (createLog) logOutput.WriteLine($"null,{offset},{size},0");
+                    continue;
+                }
+
+                brInput.BaseStream.Seek(offset, SeekOrigin.Begin);
+                byte[] data = brInput.ReadBytes(size);
+
+                // Get extension
+                byte[] header = new byte[4];
+                Array.Copy(data, header, 4);
+                uint headerInt = BitConverter.ToUInt32(header, 0);
+                string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
+                if (extension == null) extension = Helpers.CheckForMagic(headerInt, data);
+                if (extension == null) extension = "bin";
+
+                // Print info
+                Console.WriteLine($"Offset: 0x{offset.ToString("X8")}, Size: 0x{size.ToString("X8")} ({extension})");
+                if (createLog) logOutput.WriteLine($"{(i + 1).ToString("D4")}_{offset.ToString("X8")}.{extension},{offset},{size},{headerInt}");
+
+                // Extract file
+                File.WriteAllBytes($"{outputDir}\\{(i + 1).ToString("D4")}_{offset.ToString("X8")}.{extension}", data);
+
+                // Move to next entry block
+                brInput.BaseStream.Seek((i + 1) * 0x08, SeekOrigin.Begin);
+            }
+
+            // Rest
+            int restCount = brInput.ReadInt32();
+            int unkHeader = brInput.ReadInt32();
+            if (createLog) logOutput.WriteLine(restCount + "," + unkHeader);
+            for (int i = 3; i < restCount + 3; i++)
+            {
+                int offset = brInput.ReadInt32();
+                int size = brInput.ReadInt32();
+                int unk = brInput.ReadInt32();
+
+                if (size == 0)
+                {
+                    Console.WriteLine($"Offset: 0x{offset.ToString("X8")}, Size: 0x{size.ToString("X8")}, Unk: 0x{unk.ToString("X8")} (SKIPPED)");
+                    if (createLog) logOutput.WriteLine($"null,{offset},{size},{unk},0");
+                    continue;
+                }
+
+                brInput.BaseStream.Seek(offset, SeekOrigin.Begin);
+                byte[] data = brInput.ReadBytes(size);
+
+                // Get extension
+                byte[] header = new byte[4];
+                Array.Copy(data, header, 4);
+                uint headerInt = BitConverter.ToUInt32(header, 0);
+                string extension = Enum.GetName(typeof(Helpers.Extensions), headerInt);
+                if (extension == null) extension = Helpers.CheckForMagic(headerInt, data);
+                if (extension == null) extension = "bin";
+
+                // Print info
+                Console.WriteLine($"Offset: 0x{offset.ToString("X8")}, Size: 0x{size.ToString("X8")}, Unk: 0x{unk.ToString("X8")} ({extension})");
+                if (createLog) logOutput.WriteLine($"{(i + 1).ToString("D4")}_{offset.ToString("X8")}.{extension},{offset},{size},{unk}, {headerInt}");
+
+                // Extract file
+                File.WriteAllBytes($"{outputDir}\\{(i + 1).ToString("D4")}_{offset.ToString("X8")}.{extension}", data);
+
+                // Move to next entry block
+                brInput.BaseStream.Seek(0x18 + 0x08 + (i - 3 + 1) * 0x0C, SeekOrigin.Begin); // 0x18 = first three segments, 0x08 = header for this segment
+            }
+
+            // Clean up
+            logOutput.Close();
+            if (!createLog) File.Delete($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            if (cleanUp) File.Delete(input);
         }
 
         public static void PrintFTXT(string input, BinaryReader brInput)

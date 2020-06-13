@@ -16,6 +16,8 @@ ReFrontier options:
 -close: Close window after finishing process
 -cleanUp: Delete simple archives after unpacking
 -ignoreJPK: Do not decompress JPK files
+-stageContainer: Unpack file as stage-specific container (for certain stXXX.pac files and maybe others)
+-autoStage: Automatically attempt to unpack containers that might be stage-specific (this is very experimental, since there is no reliable way to detect a stage-specific container)
 ```
 
 JPK type 4 compression test (tested on vanilla mhfdat.bin):
@@ -54,5 +56,4 @@ Vanilla file from COG with type 4       : 5363764 bytes (79,72 % saved)
 Some more useful tools and projects:
 - [Blender plugin for 3D models](https://github.com/AsteriskAmpersand/Monster-Hunter-Frontier-Importer)
 - [P-Server project](https://github.com/Andoryuuta/Erupe)
-- [Mira's 010 templates](https://github.com/CrimsonMiralis/MHFZ-Templates)
 - [Fist's 010 templates](https://github.com/SirFist/fz-010-scripts)

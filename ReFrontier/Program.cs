@@ -17,6 +17,8 @@ namespace ReFrontier
         static bool cleanUp = false;
         static bool compress = false;
         static bool ignoreJPK = false;
+        static bool stageContainer = false;
+        static bool autoStage = false;
 
         //[STAThread]
         static void Main(string[] args)
@@ -36,7 +38,9 @@ namespace ReFrontier
                     "-encrypt: Encrypt input file with ecd algorithm\n" +
                     "-close: Close window after finishing process\n" +
                     "-cleanUp: Delete simple archives after unpacking\n" +
-                    "-ignoreJPK: Do not decompress JPK files", 
+                    "-ignoreJPK: Do not decompress JPK files\n" +
+                    "-stageContainer: Unpack file as stage-specific container\n" +
+                    "-autoStage: Automatically attempt to unpack containers that might be stage-specific", 
                     false);
                 Console.Read();
                 return;
@@ -52,6 +56,8 @@ namespace ReFrontier
             if (args.Any("-cleanUp)".Contains)) cleanUp = true;
             if (args.Any("-compress)".Contains)) { compress = true; repack = false; }
             if (args.Any("-ignoreJPK".Contains)) ignoreJPK = true;
+            if (args.Any("-stageContainer".Contains)) stageContainer = true;
+            if (args.Any("-autoStage".Contains)) autoStage = true;
 
             // Check file
             if (File.Exists(input) || Directory.Exists(input))
@@ -121,11 +127,17 @@ namespace ReFrontier
 
             int fileMagic = brInput.ReadInt32();
 
+            // Since stage containers have no file magic, check for them first
+            if (stageContainer == true)
+            {
+                brInput.BaseStream.Seek(0, SeekOrigin.Begin);
+                try { Unpack.UnpackStageContainer(input, brInput, createLog, cleanUp); } catch { }
+            }
             // MOMO Header: snp, snd
-            if (fileMagic == 0x4F4D4F4D)
+            else if (fileMagic == 0x4F4D4F4D)
             {
                 Console.WriteLine("MOMO Header detected.");
-                Unpack.UnpackSimpleArchive(input, brInput, 8, createLog, cleanUp);
+                Unpack.UnpackSimpleArchive(input, brInput, 8, createLog, cleanUp, autoStage);
             }
             // ECD Header
             else if (fileMagic == 0x1A646365)
@@ -175,9 +187,8 @@ namespace ReFrontier
             // Try to unpack as simple container: i.e. txb, bin, pac, gab
             else
             {
-                Console.WriteLine("Trying to unpack as generic simple container.");
                 brInput.BaseStream.Seek(0, SeekOrigin.Begin);
-                try { Unpack.UnpackSimpleArchive(input, brInput, 4, createLog, cleanUp); } catch { }                
+                try { Unpack.UnpackSimpleArchive(input, brInput, 4, createLog, cleanUp, autoStage); } catch { }                
             }
 
             if (fileMagic == 0x1A646365 && !decryptOnly) { Console.WriteLine("=============================="); ProcessFile(input); return; }
@@ -191,6 +202,9 @@ namespace ReFrontier
             foreach (string inputFile in inputFiles)
             {
                 ProcessFile(inputFile);
+
+                // Disable stage processing files unpacked from parent
+                if (stageContainer == true) stageContainer = false;
 
                 FileInfo fileInfo = new FileInfo(inputFile);
                 string[] patterns = { "*.bin", "*.jkr", "*.ftxt", "*.snd" };
