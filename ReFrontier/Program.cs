@@ -30,19 +30,21 @@ namespace ReFrontier
             if (args.Length < 1)
             {
                 Helpers.Print("Usage: ReFrontier <file> (options)\n" +
-                    "Options:\n" +
+                    "\nUnpacking Options:\n" +
                     "-log: Write log file (required for repacking)\n" +
+                    "-cleanUp: Delete simple archives after unpacking\n" +
+                    "-stageContainer: Unpack file as stage-specific container\n" +
+                    "-autoStage: Automatically attempt to unpack containers that might be stage-specific\n" +
                     "-nonRecursive: Do not unpack recursively\n" +
-                    "-pack: Repack directory (requires log file)\n" +
                     "-decryptOnly: Decrypt ecd files without unpacking\n" +
                     "-noDecryption: Don't decrypt ecd files, no unpacking\n" +
+                    "-ignoreJPK: Do not decompress JPK files\n" +
+                    "\nPacking Options:\n" +
+                    "-pack: Repack directory (requires log file)\n" +
                     "-compress [type],[level]: Pack file with jpk [type] at compression [level]\n" +
                     "-encrypt: Encrypt input file with ecd algorithm\n" +
-                    "-close: Close window after finishing process\n" +
-                    "-cleanUp: Delete simple archives after unpacking\n" +
-                    "-ignoreJPK: Do not decompress JPK files\n" +
-                    "-stageContainer: Unpack file as stage-specific container\n" +
-                    "-autoStage: Automatically attempt to unpack containers that might be stage-specific", 
+                    "\nGeneral Options:\n" +
+                    "-close: Close window after finishing process",
                     false);
                 Console.Read();
                 return;

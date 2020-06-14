@@ -7,18 +7,23 @@ Huge thank you to enler for their help!
 
 ReFrontier options:
 ```
+Unpacking Options:
 -log: Write log file (required for repacking)
--nonRecursive: Do not unpack recursively (useful for modifying specific files in archives)
--pack: Repack directory (requires log file  - double check file extensions therein and make sure you account for encryption, compression)
--decryptOnly: Decrypt ecd files without unpacking
--noDecryption: Don't decrypt ecd files, no unpacking
--compress [type],[level]: Pack file with jpk [type] at compression [level] (example: -compress 3,10)
--encrypt: Encrypt input file with ecd algorithm
--close: Close window after finishing process
 -cleanUp: Delete simple archives after unpacking
--ignoreJPK: Do not decompress JPK files
 -stageContainer: Unpack file as stage-specific container (for certain stXXX.pac files and maybe others)
 -autoStage: Automatically attempt to unpack containers that might be stage-specific (this is very experimental, since there is no reliable way to detect a stage-specific container)
+-nonRecursive: Do not unpack recursively (useful for modifying specific files in archives, also check -noDecryption/-ignoreJPK)
+-decryptOnly: Decrypt ecd files without unpacking
+-noDecryption: Don't decrypt ecd files, no unpacking
+-ignoreJPK: Do not decompress JPK files
+
+Packing Options:
+-pack: Repack directory (requires log file  - double check file extensions therein and make sure you account for encryption, compression)
+-compress [type],[level]: Pack file with jpk [type] at compression [level] (example: -compress 3,10)
+-encrypt: Encrypt input file with ecd algorithm
+
+General Options:
+-close: Close window after finishing process
 ```
 
 JPK type 4 compression test (tested on vanilla mhfdat.bin):
