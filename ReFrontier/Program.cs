@@ -12,6 +12,7 @@ namespace ReFrontier
         static bool recursive = true;
         static bool repack = false;
         static bool decryptOnly = false;
+        static bool noDecryption = false;
         static bool encrypt = false;
         static bool autoClose = false;
         static bool cleanUp = false;
@@ -34,6 +35,7 @@ namespace ReFrontier
                     "-nonRecursive: Do not unpack recursively\n" +
                     "-pack: Repack directory (requires log file)\n" +
                     "-decryptOnly: Decrypt ecd files without unpacking\n" +
+                    "-noDecryption: Don't decrypt ecd files, no unpacking\n" +
                     "-compress [type],[level]: Pack file with jpk [type] at compression [level]\n" +
                     "-encrypt: Encrypt input file with ecd algorithm\n" +
                     "-close: Close window after finishing process\n" +
@@ -47,17 +49,18 @@ namespace ReFrontier
             }
 
             string input = args[0];
-            if (args.Any("-log".Contains)) createLog = true;
-            if (args.Any("-nonRecursive".Contains)) recursive = false;
+            if (args.Any("-log".Contains)) { createLog = true; repack = false; }
+            if (args.Any("-nonRecursive".Contains)) { recursive = false; repack = false; }
             if (args.Any("-pack".Contains)) repack = true;
             if (args.Any("-decryptOnly".Contains)) { decryptOnly = true; repack = false; }
+            if (args.Any("-noDecryption".Contains)) { noDecryption = true; repack = false; }
             if (args.Any("-encrypt".Contains)) { encrypt = true; repack = false; }
             if (args.Any("-close)".Contains)) autoClose = true;
             if (args.Any("-cleanUp)".Contains)) cleanUp = true;
             if (args.Any("-compress)".Contains)) { compress = true; repack = false; }
-            if (args.Any("-ignoreJPK".Contains)) ignoreJPK = true;
-            if (args.Any("-stageContainer".Contains)) stageContainer = true;
-            if (args.Any("-autoStage".Contains)) autoStage = true;
+            if (args.Any("-ignoreJPK".Contains)) { ignoreJPK = true; repack = false; }
+            if (args.Any("-stageContainer".Contains)) { stageContainer = true; repack = false; }
+            if (args.Any("-autoStage".Contains)) { autoStage = true; repack = false; }
 
             // Check file
             if (File.Exists(input) || Directory.Exists(input))
@@ -143,17 +146,25 @@ namespace ReFrontier
             else if (fileMagic == 0x1A646365)
             {
                 Console.WriteLine("ECD Header detected.");
-                byte[] buffer = File.ReadAllBytes(input);
-                Crypto.decEcd(buffer);
+                if (noDecryption == false)
+                {
+                    byte[] buffer = File.ReadAllBytes(input);
+                    Crypto.decEcd(buffer);
 
-                byte[] ecdHeader = new byte[0x10];
-                Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
-                byte[] bufferStripped = new byte[buffer.Length - 0x10];
-                Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
+                    byte[] ecdHeader = new byte[0x10];
+                    Array.Copy(buffer, 0, ecdHeader, 0, 0x10);
+                    byte[] bufferStripped = new byte[buffer.Length - 0x10];
+                    Array.Copy(buffer, 0x10, bufferStripped, 0, buffer.Length - 0x10);
 
-                File.WriteAllBytes(input, bufferStripped);
-                if (createLog) File.WriteAllBytes($"{input}.meta", ecdHeader);
-                Console.WriteLine("File decrypted.");
+                    File.WriteAllBytes(input, bufferStripped);
+                    if (createLog) File.WriteAllBytes($"{input}.meta", ecdHeader);
+                    Console.WriteLine("File decrypted.");
+                }
+                else
+                {
+                    Helpers.Print("Not decrypting due to flag.", false);
+                    return;
+                }
             }
             // EXF Header
             else if (fileMagic == 0x1A667865)
@@ -176,7 +187,7 @@ namespace ReFrontier
             else if (fileMagic == 0x0161686D)
             {
                 Console.WriteLine("MHA Header detected.");
-                Unpack.UnpackMHA(input, brInput);
+                Unpack.UnpackMHA(input, brInput, createLog);
             }
             // MHF Text file
             else if (fileMagic == 0x000B0000)

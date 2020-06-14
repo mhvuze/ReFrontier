@@ -9,8 +9,9 @@ ReFrontier options:
 ```
 -log: Write log file (required for repacking)
 -nonRecursive: Do not unpack recursively (useful for modifying specific files in archives)
--pack: Repack directory (requires log file  - double check file extensions therein)
+-pack: Repack directory (requires log file  - double check file extensions therein and make sure you account for encryption, compression)
 -decryptOnly: Decrypt ecd files without unpacking
+-noDecryption: Don't decrypt ecd files, no unpacking
 -compress [type],[level]: Pack file with jpk [type] at compression [level] (example: -compress 3,10)
 -encrypt: Encrypt input file with ecd algorithm
 -close: Close window after finishing process

@@ -112,42 +112,50 @@ namespace ReFrontier
             //if (Directory.GetFiles(outputDir) == null) Directory.Delete(outputDir);
         }
 
-        public static void UnpackMHA(string input, BinaryReader brInput)
+        public static void UnpackMHA(string input, BinaryReader brInput, bool createLog)
         {
             FileInfo fileInfo = new FileInfo(input);
             string outputDir = $"{fileInfo.DirectoryName}\\{Path.GetFileNameWithoutExtension(input)}";
             Directory.CreateDirectory(outputDir);
+
+            StreamWriter logOutput = new StreamWriter($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
+            if (createLog) { logOutput.WriteLine("MHA"); logOutput.WriteLine(input.Remove(0, input.LastIndexOf('\\') + 1)); }
 
             // Read header
             int pointerEntryMetaBlock = brInput.ReadInt32();
             int count = brInput.ReadInt32();
             int pointerEntryNamesBlock = brInput.ReadInt32();
             int entryNamesBlockLength = brInput.ReadInt32();
+            Int16 unk1 = brInput.ReadInt16();
+            Int16 unk2 = brInput.ReadInt16();
+            if (createLog) { logOutput.WriteLine(count); logOutput.WriteLine(unk1); logOutput.WriteLine(unk2); }
 
             // File Data
-            int entryNamesLength = 0;
             for (int i = 0; i < count; i++)
             {
                 // Get meta
                 brInput.BaseStream.Seek(pointerEntryMetaBlock + i * 0x14, SeekOrigin.Begin);
-                int entryUnk1 = brInput.ReadInt32();
+                int stringOffset = brInput.ReadInt32();
                 int entryOffset = brInput.ReadInt32();
                 int entrySize = brInput.ReadInt32();
-                int entryUnk2 = brInput.ReadInt32();
-                int entryUnk3 = brInput.ReadInt32();
+                int pSize = brInput.ReadInt32();        // Padded size
+                int fileId = brInput.ReadInt32();
 
                 // Get name
-                brInput.BaseStream.Seek(pointerEntryNamesBlock + entryNamesLength, SeekOrigin.Begin);
+                brInput.BaseStream.Seek(pointerEntryNamesBlock + stringOffset, SeekOrigin.Begin);
                 string entryName = Helpers.ReadNullterminatedString(brInput, Encoding.UTF8);
-                entryNamesLength += (entryName.Length + 1);
+                if (createLog) logOutput.WriteLine(entryName + "," + fileId);
 
                 // Extract file
                 brInput.BaseStream.Seek(entryOffset, SeekOrigin.Begin);
                 byte[] entryData = brInput.ReadBytes(entrySize);
                 File.WriteAllBytes($"{outputDir}\\{entryName}", entryData);
 
-                Console.WriteLine($"{entryName}, 0x{entryUnk1.ToString("X8")}, Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")}, pSize: 0x{entryUnk2.ToString("X8")}, 0x{entryUnk3.ToString("X8")}");
+                Console.WriteLine($"{entryName}, String Offset: 0x{stringOffset.ToString("X8")}, Offset: 0x{entryOffset.ToString("X8")}, Size: 0x{entrySize.ToString("X8")}, pSize: 0x{pSize.ToString("X8")}, File ID: 0x{fileId.ToString("X8")}");
             }
+
+            logOutput.Close();
+            if (!createLog) File.Delete($"{outputDir}\\{Path.GetFileNameWithoutExtension(input)}.log");
         }
 
         public static void UnpackJPK(string input)
