@@ -287,7 +287,7 @@ namespace ReFrontier
 
                 // Print info
                 Console.WriteLine($"Offset: 0x{offset.ToString("X8")}, Size: 0x{size.ToString("X8")}, Unk: 0x{unk.ToString("X8")} ({extension})");
-                if (createLog) logOutput.WriteLine($"{(i + 1).ToString("D4")}_{offset.ToString("X8")}.{extension},{offset},{size},{unk}, {headerInt}");
+                if (createLog) logOutput.WriteLine($"{(i + 1).ToString("D4")}_{offset.ToString("X8")}.{extension},{offset},{size},{unk},{headerInt}");
 
                 // Extract file
                 File.WriteAllBytes($"{outputDir}\\{(i + 1).ToString("D4")}_{offset.ToString("X8")}.{extension}", data);
