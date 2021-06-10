@@ -176,11 +176,12 @@ namespace ReFrontier
                     for (int i = 0; i < 3; i++)
                     {
                         byte[] fileData = new byte[0];
+                        bwOutput.BaseStream.Seek(i * 0x08, SeekOrigin.Begin);
+
                         if (listFileNames[i] != "null")
                         {
                             Console.WriteLine($"{input}\\{listFileNames[i]}");
                             fileData = File.ReadAllBytes($"{input}\\{listFileNames[i]}");
-                            bwOutput.BaseStream.Seek(i * 0x08, SeekOrigin.Begin);
                             bwOutput.Write(offset);
                             bwOutput.Write(fileData.Length);
                             bwOutput.BaseStream.Seek(offset, SeekOrigin.Begin);
@@ -209,11 +210,12 @@ namespace ReFrontier
                     for (int i = 3; i < restCount + 3; i++)
                     {
                         byte[] fileData = new byte[0];
+                        bwOutput.BaseStream.Seek(3 * 8 + (i - 3) * 0x0C + 8, SeekOrigin.Begin); // + 8 = rest count and unk header int
+
                         if (listFileNames[i] != "null") 
                         {
                             Console.WriteLine($"{input}\\{listFileNames[i]}");
                             fileData = File.ReadAllBytes($"{input}\\{listFileNames[i]}");
-                            bwOutput.BaseStream.Seek(3 * 8 + (i - 3) * 0x0C + 8, SeekOrigin.Begin); // + 8 = rest count and unk header int
                             bwOutput.Write(offset);
                             bwOutput.Write(fileData.Length);
                             bwOutput.Write(int.Parse(logContent[6 + i - 3].Split(',')[3]));
