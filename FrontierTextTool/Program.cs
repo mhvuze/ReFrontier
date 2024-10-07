@@ -174,9 +174,10 @@ namespace FrontierTextTool
 
             // Create dictionary with offset replacements
             Dictionary<int, int> offsetDict = new Dictionary<int, int>();
-            for (int i = 0; i < eStringsCount; i++) offsetDict.Add((int)eStringsOffsets[i], inputArray.Length + eStringLengths.Take(i).Sum());
+            for (int i = 0; i < eStringsCount; i++) 
+                offsetDict.Add((int)eStringsOffsets[i], inputArray.Length + eStringLengths.Take(i).Sum());
 
-            if (verbose) Console.WriteLine($"Filling array of size {eStringsLength.ToString("X8")}...");
+            if (verbose) Console.WriteLine($"Filling array of size {eStringsLength:X8}...");
             byte[] eStringsArray = new byte[eStringsLength];
             for (int i = 0, j = 0; i < stringDatabase.Count; i++)
             {
@@ -198,9 +199,11 @@ namespace FrontierTextTool
                 int cur = BitConverter.ToInt32(inputArray, p);
                 if (offsetDict.ContainsKey(cur) && p > 10000)
                 {
-                    int replacement = 0; offsetDict.TryGetValue(cur, out replacement);
+                    int replacement = 0;
+                    offsetDict.TryGetValue(cur, out replacement);
                     byte[] newPointer = BitConverter.GetBytes(replacement);
-                    for (int w = 0; w < 4; w++) inputArray[p + w] = newPointer[w];
+                    for (int w = 0; w < 4; w++)
+                        inputArray[p + w] = newPointer[w];
                 }
             }
 

@@ -14,12 +14,27 @@ namespace FrontierDataTool
         // Define offset pointers
         // --- mhfdat.bin ---
         // Strings
-        static int soStringHead = 0x64; static int soStringBody = 0x68; static int soStringArm = 0x6C; static int soStringWaist = 0x70; static int soStringLeg = 0x74;
-        static int eoStringHead = 0x60; static int eoStringBody = 0x64; static int eoStringArm = 0x68; static int eoStringWaist = 0x6C; static int eoStringLeg = 0x70;
-        static int soStringRanged = 0x84; static int soStringMelee = 0x88;
-        static int eoStringRanged = 0x88; static int eoStringMelee = 0x174;
-        static int soStringItem = 0x100; static int soStringItemDesc = 0x12C;
-        static int eoStringItem = 0xFC; static int eoStringItemDesc = 0x100;
+        static int soStringHead = 0x64; 
+        static int soStringBody = 0x68; 
+        static int soStringArm = 0x6C; 
+        static int soStringWaist = 0x70; 
+        static int soStringLeg = 0x74;
+
+        static int eoStringHead = 0x60; 
+        static int eoStringBody = 0x64; 
+        static int eoStringArm = 0x68; 
+        static int eoStringWaist = 0x6C; 
+        static int eoStringLeg = 0x70;
+
+        static int soStringRanged = 0x84; 
+        static int soStringMelee = 0x88;
+
+        // static int eoStringRanged = 0x88; static int eoStringMelee = 0x174;
+        
+        static int soStringItem = 0x100; 
+        static int soStringItemDesc = 0x12C;
+        static int eoStringItem = 0xFC; 
+        static int eoStringItemDesc = 0x100;
 
         // Armor
         static int soHead = 0x50; static int soBody = 0x54; static int soArm = 0x58; static int soWaist = 0x5C; static int soLeg = 0x60;
